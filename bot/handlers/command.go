@@ -17,28 +17,43 @@ func HandleMessage(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 	if strings.HasPrefix(text, "/") {
 		handleCommand(message.Chat.ID, text, bot)
 	} else if screaming {
-		bot.Send(sendScreamedMessage(message))
+		_, err := bot.Send(sendScreamedMessage(message))
+		if err != nil {
+			log.Println("Error sending message:", err)
+		}
 	} else {
-		bot.Send(copyMessage(message))
+		_, err := bot.Send(copyMessage(message))
+		if err != nil {
+			log.Println("Error sending message:", err)
+		}
 	}
 }
 
 // Handle commands (e.g., /scream, /whisper, /menu)
-func handleCommand(chatId int64, command string, bot *tgbotapi.BotAPI) {
+func handleCommand(chatID int64, command string, bot *tgbotapi.BotAPI) {
 	switch command {
 	case "/scream":
 		screaming = true
-		bot.Send(tgbotapi.NewMessage(chatId, "Screaming mode enabled."))
+		_, err := bot.Send(tgbotapi.NewMessage(chatID, "Screaming mode enabled."))
+		if err != nil {
+			log.Println("Error sending message:", err)
+		}
 	case "/whisper":
 		screaming = false
-		bot.Send(tgbotapi.NewMessage(chatId, "Screaming mode disabled."))
+		_, err := bot.Send(tgbotapi.NewMessage(chatID, "Screaming mode disabled."))
+		if err != nil {
+			log.Println("Error sending message:", err)
+		}
 	case "/menu":
-		bot.Send(sendMenu(chatId))
+		_, err := bot.Send(sendMenu(chatID))
+		if err != nil {
+			log.Println("Error sending message:", err)
+		}
 	}
 }
 
-func sendMenu(chatId int64) tgbotapi.MessageConfig {
-	msg := tgbotapi.NewMessage(chatId, firstMenu)
+func sendMenu(chatID int64) tgbotapi.MessageConfig {
+	msg := tgbotapi.NewMessage(chatID, firstMenu)
 	msg.ParseMode = tgbotapi.ModeHTML
 	msg.ReplyMarkup = firstMenuMarkup
 	return msg

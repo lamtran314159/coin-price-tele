@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"log"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -20,10 +22,16 @@ func HandleButton(query *tgbotapi.CallbackQuery, bot *tgbotapi.BotAPI) {
 	}
 
 	callbackCfg := tgbotapi.NewCallback(query.ID, "")
-	bot.Send(callbackCfg)
+	_, err := bot.Request(callbackCfg)
+	if err != nil {
+		log.Println("Error sending callback:", err)
+	}
 
 	// Replace menu text and keyboard
 	msg := tgbotapi.NewEditMessageTextAndMarkup(message.Chat.ID, message.MessageID, text, markup)
 	msg.ParseMode = tgbotapi.ModeHTML
-	bot.Send(msg)
+	_, err = bot.Send(msg)
+	if err != nil {
+		log.Println("Error editing message:", err)
+	}
 }
