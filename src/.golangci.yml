@@ -47,7 +47,7 @@ linters:
     - noctx
     - nolintlint
     - revive
-    # - staticcheck
+    - staticcheck
     - stylecheck
     - testifylint
     - unconvert
