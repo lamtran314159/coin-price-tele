@@ -1,0 +1,16 @@
+{
+  "name": "mock-be",
+  "version": "1.0.0",
+  "description": "",
+  "main": "mock-backend.js",
+  "scripts": {
+    "start": "node mock-backend.js",
+    "start:dev": "nodemon mock-backend.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.1",
+    "nodemon": "^3.1.7"
+  }
+}
