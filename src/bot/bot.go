@@ -2,12 +2,40 @@ package bot
 
 import (
 	"context"
+	"log"
 	"telegram-bot/bot/handlers"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 var bot *tgbotapi.BotAPI
+
+var commands = []tgbotapi.BotCommand{
+	{
+		Command:     "start",
+		Description: "Authenticate and start using the bot",
+	},
+	{
+		Command:     "scream",
+		Description: "Enable screaming mode",
+	},
+	{
+		Command:     "whisper",
+		Description: "Disable screaming mode",
+	},
+	{
+		Command:     "menu",
+		Description: "Show menu with buttons",
+	},
+	{
+		Command:     "help",
+		Description: "Show available commands",
+	},
+	{
+		Command:     "protected",
+		Description: "Test to see if user is authenticated",
+	},
+}
 
 // Initialize the bot with the token
 func InitBot(token string) (*tgbotapi.BotAPI, error) {
@@ -17,6 +45,10 @@ func InitBot(token string) (*tgbotapi.BotAPI, error) {
 		return nil, err
 	}
 	bot.Debug = false // Set to true if you want to debug interactions
+	_, err = bot.Request(tgbotapi.NewSetMyCommands(commands...))
+	if err != nil {
+		log.Panic(err)
+	}
 	return bot, nil
 }
 

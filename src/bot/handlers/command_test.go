@@ -12,7 +12,10 @@ import (
 func TestHandleCommand(t *testing.T) {
 	// Mock the bot
 	bot := &tgbotapi.BotAPI{}
-
+	// Mock the user
+	user := &tgbotapi.User{
+		ID: 123456,
+	}
 	// Test cases for each command
 	tests := []struct {
 		command string
@@ -28,7 +31,7 @@ func TestHandleCommand(t *testing.T) {
 
 		// Capture output by simulating bot.Send method
 		t.Run(tt.command, func(t *testing.T) {
-			handleCommand(chatID, tt.command, bot)
+			handleCommand(chatID, tt.command, bot, user)
 			// We are not actually sending the message via Telegram in the test,
 			// but we check that the appropriate command was processed correctly.
 		})

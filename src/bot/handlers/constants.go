@@ -37,3 +37,11 @@ var (
 		),
 	)
 )
+
+var commandList = []string{
+	"/start - Authenticate and start using the bot",
+	"/scream - Enable screaming mode",
+	"/whisper - Disable screaming mode",
+	"/menu - Show menu with buttons",
+	"/help - Show available commands",
+}
