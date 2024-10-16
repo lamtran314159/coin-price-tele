@@ -38,13 +38,21 @@ var commands = []tgbotapi.BotCommand{
 }
 
 // Initialize the bot with the token
-func InitBot(token string) (*tgbotapi.BotAPI, error) {
+func InitBot(token string, webhookURL string) (*tgbotapi.BotAPI, error) {
 	var err error
 	bot, err = tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return nil, err
 	}
 	bot.Debug = false // Set to true if you want to debug interactions
+	webhook, err := tgbotapi.NewWebhook(webhookURL)
+	if err != nil {
+		return nil, err
+	}
+	_, err = bot.Request(webhook)
+	if err != nil {
+		return nil, err
+	}
 	_, err = bot.Request(tgbotapi.NewSetMyCommands(commands...))
 	if err != nil {
 		log.Panic(err)
@@ -61,6 +69,24 @@ func Start(ctx context.Context, bot *tgbotapi.BotAPI) {
 
 	// Pass updates to handler
 	go receiveUpdates(ctx, updates)
+}
+
+//Start listening update from webhook
+func StartWebhook(bot *tgbotapi.BotAPI){
+	//Create the update channel using ListenForWebhook
+	log.Printf("here")
+	updates := bot.ListenForWebhook("/webhook")
+	if updates == nil{
+		log.Printf("here")
+	}
+	for update := range updates{
+		if update.Message != nil {
+			log.Print("got updates")
+			handlers.HandleMessage(update.Message, bot)
+		} else if update.CallbackQuery != nil {
+			handlers.HandleButton(update.CallbackQuery, bot)
+		}
+	}
 }
 
 // Receive updates and pass them to handlers
