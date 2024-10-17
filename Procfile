@@ -1,1 +1,1 @@
-web: cd ./src && go run main.go
+web: cd .\src\ && go run main.go
