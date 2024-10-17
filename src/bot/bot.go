@@ -74,14 +74,9 @@ func Start(ctx context.Context, bot *tgbotapi.BotAPI) {
 //Start listening update from webhook
 func StartWebhook(bot *tgbotapi.BotAPI){
 	//Create the update channel using ListenForWebhook
-	log.Printf("here")
 	updates := bot.ListenForWebhook("/webhook")
-	if updates == nil{
-		log.Printf("here")
-	}
 	for update := range updates{
 		if update.Message != nil {
-			log.Print("got updates")
 			handlers.HandleMessage(update.Message, bot)
 		} else if update.CallbackQuery != nil {
 			handlers.HandleButton(update.CallbackQuery, bot)

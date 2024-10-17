@@ -8,7 +8,6 @@ import (
 	"telegram-bot/bot"
 	"telegram-bot/config"
 	"net/http"
-	"telegram-bot/bot/handlers"
 
 	"github.com/joho/godotenv"
 )
@@ -41,17 +40,5 @@ func main() {
 	port := "8443"
 	go http.ListenAndServe(":"+port, nil)
 	log.Printf("Bot is listening on port %s...\n",port)
-	// go bot.StartWebhook(tgBot)
-
-	// Handle incoming updates from the update channel
-	updates := tgBot.ListenForWebhook("/webhook")
-
-	for update := range updates{
-		if update.Message != nil {
-			log.Print("got updates")
-			handlers.HandleMessage(update.Message, tgBot)
-		} else if update.CallbackQuery != nil {
-			handlers.HandleButton(update.CallbackQuery, tgBot)
-		}
-	}
+	bot.StartWebhook(tgBot)
 }
