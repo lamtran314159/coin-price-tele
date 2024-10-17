@@ -37,7 +37,10 @@ func main() {
 	// cancel()
 
 	// Start an HTTP server to listen for incoming requests
-	port := "8443"
+	port := config.GetEnv("PORT")
+	if port == "" {
+		port = "8443" // Default port if not set
+	}
 	go http.ListenAndServe(":"+port, nil)
 	log.Printf("Bot is listening on port %s...\n",port)
 	bot.StartWebhook(tgBot)
