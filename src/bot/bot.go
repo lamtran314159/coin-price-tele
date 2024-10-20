@@ -49,6 +49,8 @@ func InitBot(token string) (*tgbotapi.BotAPI, error) {
 	if err != nil {
 		log.Panic(err)
 	}
+	log.Printf("Start")
+	handlers.FetchandStartWebSocket()
 	return bot, nil
 }
 

@@ -40,13 +40,14 @@ func HandleMessage(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 // Handle commands (e.g., /scream, /whisper, /menu)
 func handleCommand(chatID int64, command string, bot *tgbotapi.BotAPI, user *tgbotapi.User) {
 	fmt.Println(user.ID)
-	switch command {
-	case "/help":
+	isPriceCommand := strings.HasPrefix(command, "/p ")
+	switch {
+	case command == "/help":
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, strings.Join(commandList, "\n")))
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	case "/start":
+	case command == "/start":
 		token, err := services.AuthenticateUser(user.ID)
 		if err != nil {
 			_, err := bot.Send(tgbotapi.NewMessage(chatID, "Access denied."))
@@ -66,24 +67,24 @@ func handleCommand(chatID int64, command string, bot *tgbotapi.BotAPI, user *tgb
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	case "/scream":
+	case command == "/scream":
 		screaming = true
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, "Screaming mode enabled."))
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	case "/whisper":
+	case command == "/whisper":
 		screaming = false
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, "Screaming mode disabled."))
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	case "/menu":
+	case command == "/menu":
 		_, err := bot.Send(sendMenu(chatID))
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	case "/protected":
+	case command == "/protected":
 		token := userTokens.m[int(user.ID)]
 		response, err := services.ValidateToken(token)
 		if err != nil {
@@ -91,6 +92,26 @@ func handleCommand(chatID int64, command string, bot *tgbotapi.BotAPI, user *tgb
 			return
 		}
 		_, err = bot.Send(tgbotapi.NewMessage(chatID, response))
+		if err != nil {
+			log.Println("Error sending message:", err)
+		}
+	case isPriceCommand: // Handle the /p <symbol> command
+		symbol := strings.TrimSpace(command[3:])
+
+		if symbol == "" {
+			bot.Send(tgbotapi.NewMessage(chatID, "Please provide a symbol (e.g., /p eth)."))
+			return
+		}
+		//log.Printf("Symbol: %s", symbol)
+		price, exists := CryptoPrices[strings.ToUpper(symbol)+"USDT"]
+		//log.Printf(strings.ToUpper(symbol) + "USDT")
+		//log.Printf("Price: %f, Exists: %t", price, exists)
+		if !exists || price == 0 {
+			bot.Send(tgbotapi.NewMessage(chatID, "Price for "+symbol+" is not available yet. Please try again later."))
+			return
+		}
+		message := fmt.Sprintf("Current %s price: $%.4f", symbol, price)
+		_, err := bot.Send(tgbotapi.NewMessage(chatID, message))
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
