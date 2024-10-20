@@ -17,7 +17,7 @@
 | 2   | Nguyễn Trung Tín             | Developer    | 2212548         | [Github](https://github.com/thanhlam2000) |
 | 3   | Thái Thành Duy               | Developer    | 2212213         | [Github](https://github.com/thanhlam2000) |
 | 4   | Nguyễn Đăng Khoa             | Developer    | 2212823         | [Github](https://github.com/thanhlam2000) |
-| 5   | Lê Thành Đạt                 | Developer    | 2212571         | [Github](https://github.com/thanhlam2000) |
+| 5   | Lê Thành Đạt                 | Developer    | 2210683         | [Github](https://github.com/Skehjhj) |
 | 6   | Nguyễn Hữu Đăng Khoa         | Developer    | 2212571         | [Github](https://github.com/thanhlam2000) |
 | 7   | Dương Hoàng Long             | Developer    | 2212571         | [Github](https://github.com/thanhlam2000) |
 
