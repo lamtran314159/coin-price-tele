@@ -4,6 +4,10 @@ import (
 	"context"
 	"log"
 	"telegram-bot/bot/handlers"
+	"time"
+	"encoding/json"
+	"fmt"
+	"net/http"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -35,6 +39,61 @@ var commands = []tgbotapi.BotCommand{
 		Command:     "protected",
 		Description: "Test to see if user is authenticated",
 	},
+}
+
+const (
+    btcThreshold = 65000.0 // Set your threshold here
+    checkInterval = 1 * time.Minute // Check every minute
+)
+
+// PriceResponse represents the response from the Binance API
+type PriceResponse struct {
+    Symbol string `json:"symbol"`
+    Price  string `json:"price"`
+}
+
+// Function to fetch the current BTC price from Binance
+func fetchBTCPrice(symbol string) (float64, error) {
+	//Symbol and threadhold set by user
+	log.Printf("https://api.binance.com/api/v3/ticker/price?symbol="+symbol)
+    resp, err := http.Get("https://api.binance.com/api/v3/ticker/price?symbol="+symbol)
+    if err != nil {
+        return 0, err
+    }
+    defer resp.Body.Close()
+
+    var priceResponse PriceResponse
+    if err := json.NewDecoder(resp.Body).Decode(&priceResponse); err != nil {
+        return 0, err
+    }
+
+    // Convert price to float64
+    var price float64
+    if _, err := fmt.Sscanf(priceResponse.Price, "%f", &price); err != nil {
+        return 0, err
+    }
+
+    return price, nil
+}
+
+// Function to monitor BTC price
+func MonitorBTCPrice(bot *tgbotapi.BotAPI, chatID int64, symbol string) {
+    for {
+        price, err := fetchBTCPrice(symbol)
+        if err != nil {
+            log.Println("Error fetching %s price:", symbol, err)
+            continue
+        }
+
+        log.Printf("Current %s price: %.2f USDT", symbol, price)
+
+        if price > btcThreshold {
+            msg := tgbotapi.NewMessage(chatID, "🚨 Alert: price has exceeded 65,000 USDT! Current price: "+fmt.Sprintf("%.2f", price))
+            bot.Send(msg)
+        }
+
+        time.Sleep(checkInterval)
+    }
 }
 
 // Initialize the bot with the token
