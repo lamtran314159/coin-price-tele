@@ -39,6 +39,10 @@ var commands = []tgbotapi.BotCommand{
 		Command:     "protected",
 		Description: "Test to see if user is authenticated",
 	},
+	{
+		Command:     "kline",
+		Description: "<symbol> <interval> [limit] [startTime] [endTime]",
+	},
 }
 
 const (
