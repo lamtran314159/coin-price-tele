@@ -36,13 +36,13 @@ func FetchBinanceSymbols() ([]string, error) {
 		return nil, err
 	}
 
-	// Filter only USDT pairs
+	// Accept all symbols without filtering
 	var symbols []string
 	for _, s := range result.Symbols {
-		if len(s.Symbol) > 4 && s.Symbol[len(s.Symbol)-4:] == "USDT" {
-			symbols = append(symbols, s.Symbol)
-		}
+		//log.Printf("Symbol: %s", s.Symbol)
+		symbols = append(symbols, s.Symbol)
 	}
+
 	return symbols, nil
 }
 

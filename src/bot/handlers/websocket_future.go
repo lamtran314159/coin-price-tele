@@ -99,7 +99,7 @@ func StartFuturesWebSocket(symbol string) {
 
 				// Update mark price, funding rate, and countdown
 				mu1.Lock()
-				log.Printf("Symbol: %s", result.Symbol)
+				//log.Printf("Symbol: %s", result.Symbol)
 				FuturesPrices[result.Symbol] = markPrice
 				FuturesFundingRates[result.Symbol] = fundingRate
 				FuturesFundingRateCountdown[result.Symbol] = result.NextFundingTime

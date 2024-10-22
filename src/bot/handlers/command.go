@@ -24,7 +24,10 @@ func HandleMessage(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 	log.Printf("%s wrote: %s", user.FirstName, text)
 
 	if strings.HasPrefix(text, "/") {
-		handleCommand(message.Chat.ID, text, bot, user)
+		parts := strings.Fields(text)
+		command := parts[0]
+		args := parts[1:]
+		handleCommand(message.Chat.ID, command, args, bot, user)
 	} else if screaming {
 		_, err := bot.Send(sendScreamedMessage(message))
 		if err != nil {
@@ -39,16 +42,15 @@ func HandleMessage(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 }
 
 // Handle commands (e.g., /scream, /whisper, /menu)
-func handleCommand(chatID int64, command string, bot *tgbotapi.BotAPI, user *tgbotapi.User) {
+func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.BotAPI, user *tgbotapi.User) {
 	fmt.Println(user.ID)
-	isPriceCommand := strings.HasPrefix(command, "/p ")
-	switch {
-	case command == "/help":
+	switch command {
+	case "/help":
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, strings.Join(commandList, "\n")))
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	case command == "/start":
+	case "/start":
 		token, err := services.AuthenticateUser(user.ID)
 		if err != nil {
 			_, err := bot.Send(tgbotapi.NewMessage(chatID, "Access denied."))
@@ -68,65 +70,53 @@ func handleCommand(chatID int64, command string, bot *tgbotapi.BotAPI, user *tgb
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	case command == "/scream":
+	case "/scream":
 		screaming = true
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, "Screaming mode enabled."))
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	case command == "/whisper":
+	case "/whisper":
 		screaming = false
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, "Screaming mode disabled."))
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	case command == "/menu":
-		_, err := bot.Send(sendMenu(chatID))
-		if err != nil {
-			log.Println("Error sending message:", err)
-		}
-	case command == "/protected":
-		token := userTokens.m[int(user.ID)]
-		response, err := services.ValidateToken(token)
-		if err != nil {
-			log.Println("Error validating token:", err)
-			return
-		}
-		_, err = bot.Send(tgbotapi.NewMessage(chatID, response))
-		if err != nil {
-			log.Println("Error sending message:", err)
-		}
-	case isPriceCommand: // Handle the /p <symbol> command
-		symbol := strings.TrimSpace(command[3:])
+	case "/price_spot":
+		fmt.Println(args)
 
-		if symbol == "" {
-			bot.Send(tgbotapi.NewMessage(chatID, "Please provide a symbol (e.g., /p eth)."))
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /price_spot <symbol>")
+			bot.Send(msg)
 			return
 		}
-		//log.Printf("Symbol: %s", symbol)
-		price, exists := CryptoPrices[strings.ToUpper(symbol)+"USDT"]
-		//log.Printf(strings.ToUpper(symbol) + "USDT")
-		//log.Printf("Price: %f, Exists: %t", price, exists)
+
+		symbol := args[0]
+
+		price, exists := CryptoPrices[symbol]
 		if !exists || price == 0 {
-			bot.Send(tgbotapi.NewMessage(chatID, "Price for "+symbol+" is not available yet. Please try again later."))
+			bot.Send(tgbotapi.NewMessage(chatID, "Spot price for "+symbol+" is not available yet. Please try again later."))
 			return
 		}
-		message := fmt.Sprintf("Current %s price: $%.4f", symbol, price)
+		message := fmt.Sprintf("Current  %s spot price: $%.4f", symbol, price)
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, message))
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	case strings.HasPrefix(command, "/p_future"):
-		symbol := strings.TrimSpace(strings.TrimPrefix(command, "/p_future"))
+	case "/price_future":
+		fmt.Println(args)
 
-		if symbol == "" {
-			bot.Send(tgbotapi.NewMessage(chatID, "Please provide a symbol (e.g., /p ETHUSDT)."))
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /price_future <symbol>")
+			bot.Send(msg)
 			return
 		}
 
+		symbol := args[0]
+
 		price, exists := FuturesPrices[symbol]
 		if !exists || price == 0 {
-			bot.Send(tgbotapi.NewMessage(chatID, "Price for "+symbol+" is not available yet. Please try again later."))
+			bot.Send(tgbotapi.NewMessage(chatID, "Future price for "+symbol+" is not available yet. Please try again later."))
 			return
 		}
 		message := fmt.Sprintf("Current  %s future price: $%.4f", symbol, price)
@@ -134,31 +124,37 @@ func handleCommand(chatID int64, command string, bot *tgbotapi.BotAPI, user *tgb
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	case strings.HasPrefix(command, "/funding_rate"):
-		symbol := strings.TrimSpace(strings.TrimPrefix(command, "/funding_rate"))
+	case "/funding_rate":
+		fmt.Println(args)
 
-		if symbol == "" {
-			bot.Send(tgbotapi.NewMessage(chatID, "Please provide a symbol (e.g., /funding_rate ETHUSDT)."))
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /funding_rate <symbol>")
+			bot.Send(msg)
 			return
 		}
+
+		symbol := args[0]
 
 		rate, exists := FuturesFundingRates[symbol]
 		if !exists || rate == 0 {
 			bot.Send(tgbotapi.NewMessage(chatID, "Funding rate for "+symbol+" is not available yet. Please try again later."))
 			return
 		}
-		message := fmt.Sprintf("Current  %s future funding rate: %.4f", symbol, rate)
+		message := fmt.Sprintf("Current  %s future funding rate: $%.4f", symbol, rate)
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, message))
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	case strings.HasPrefix(command, "/cd"):
-		symbol := strings.TrimSpace(strings.TrimPrefix(command, "/cd"))
+	case "/funding_rate_countdown":
+		fmt.Println(args)
 
-		if symbol == "" {
-			bot.Send(tgbotapi.NewMessage(chatID, "Please provide a symbol (e.g., /funding_rate_countdown ETHUSDT)."))
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /funding_rate_countdown <symbol>")
+			bot.Send(msg)
 			return
 		}
+
+		symbol := args[0]
 
 		countdown, exists := FuturesFundingRateCountdown[symbol]
 		if !exists || countdown == 0 {
@@ -168,6 +164,22 @@ func handleCommand(chatID int64, command string, bot *tgbotapi.BotAPI, user *tgb
 		countdown1 := time.Until(time.Unix(countdown/1000, 0))
 		message := fmt.Sprintf("Current  %s future funding rate countdown: %v", symbol, countdown1.Round(time.Second))
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, message))
+		if err != nil {
+			log.Println("Error sending message:", err)
+		}
+	case "/menu":
+		_, err := bot.Send(sendMenu(chatID))
+		if err != nil {
+			log.Println("Error sending message:", err)
+		}
+	case "/protected":
+		token := userTokens.m[int(user.ID)]
+		response, err := services.ValidateToken(token)
+		if err != nil {
+			log.Println("Error validating token:", err)
+			return
+		}
+		_, err = bot.Send(tgbotapi.NewMessage(chatID, response))
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
