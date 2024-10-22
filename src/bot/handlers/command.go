@@ -95,26 +95,35 @@ func handleCommand(chatID int64, command string, bot *tgbotapi.BotAPI, user *tgb
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	case isPriceCommand: // Handle the /p <symbol> command
-		symbol := strings.TrimSpace(command[3:])
+	// case isPriceCommand: // Handle the /p <symbol> command
+	// 	symbol := strings.TrimSpace(command[3:])
 
-		if symbol == "" {
-			bot.Send(tgbotapi.NewMessage(chatID, "Please provide a symbol (e.g., /p eth)."))
-			return
-		}
-		//log.Printf("Symbol: %s", symbol)
-		price, exists := CryptoPrices[strings.ToUpper(symbol)+"USDT"]
-		//log.Printf(strings.ToUpper(symbol) + "USDT")
-		//log.Printf("Price: %f, Exists: %t", price, exists)
-		if !exists || price == 0 {
-			bot.Send(tgbotapi.NewMessage(chatID, "Price for "+symbol+" is not available yet. Please try again later."))
-			return
-		}
-		message := fmt.Sprintf("Current %s price: $%.4f", symbol, price)
-		_, err := bot.Send(tgbotapi.NewMessage(chatID, message))
-		if err != nil {
-			log.Println("Error sending message:", err)
-		}
+	// 	if symbol == "" {
+	// 		bot.Send(tgbotapi.NewMessage(chatID, "Please provide a symbol (e.g., /p eth)."))
+	// 		return
+	// 	}
+	// 	//log.Printf("Symbol: %s", symbol)
+	// 	price, exists := CryptoPrices[strings.ToUpper(symbol)+"USDT"]
+	// 	//log.Printf(strings.ToUpper(symbol) + "USDT")
+	// 	//log.Printf("Price: %f, Exists: %t", price, exists)
+	// 	if !exists || price == 0 {
+	// 		bot.Send(tgbotapi.NewMessage(chatID, "Price for "+symbol+" is not available yet. Please try again later."))
+	// 		return
+	// 	}
+	// 	message := fmt.Sprintf("Current %s price: $%.4f", symbol, price)
+	// 	_, err := bot.Send(tgbotapi.NewMessage(chatID, message))
+	// 	if err != nil {
+	// 		log.Println("Error sending message:", err)
+	// 	}
+	// }
+	case command == "/p_spot":
+		getSpotPrice(chatID, symbol)
+	case command == "/p_future":
+		getFuturePrice(chatID, symbol)
+	case command == "/fundRate":
+		getFundingRate(chatID, symbol)
+	case command == "/fundRateCDown":
+		getFundingRateCountdown(chatID, symbol)
 	}
 }
 
