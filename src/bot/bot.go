@@ -51,6 +51,7 @@ func InitBot(token string) (*tgbotapi.BotAPI, error) {
 	}
 	log.Printf("Start")
 	handlers.FetchandStartWebSocket()
+	handlers.FetchAndStartFuturesWebSocket()
 	return bot, nil
 }
 

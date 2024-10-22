@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"telegram-bot/services"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -111,6 +112,61 @@ func handleCommand(chatID int64, command string, bot *tgbotapi.BotAPI, user *tgb
 			return
 		}
 		message := fmt.Sprintf("Current %s price: $%.4f", symbol, price)
+		_, err := bot.Send(tgbotapi.NewMessage(chatID, message))
+		if err != nil {
+			log.Println("Error sending message:", err)
+		}
+	case strings.HasPrefix(command, "/p_future"):
+		symbol := strings.TrimSpace(strings.TrimPrefix(command, "/p_future"))
+
+		if symbol == "" {
+			bot.Send(tgbotapi.NewMessage(chatID, "Please provide a symbol (e.g., /p ETHUSDT)."))
+			return
+		}
+
+		price, exists := FuturesPrices[symbol]
+		if !exists || price == 0 {
+			bot.Send(tgbotapi.NewMessage(chatID, "Price for "+symbol+" is not available yet. Please try again later."))
+			return
+		}
+		message := fmt.Sprintf("Current  %s future price: $%.4f", symbol, price)
+		_, err := bot.Send(tgbotapi.NewMessage(chatID, message))
+		if err != nil {
+			log.Println("Error sending message:", err)
+		}
+	case strings.HasPrefix(command, "/funding_rate"):
+		symbol := strings.TrimSpace(strings.TrimPrefix(command, "/funding_rate"))
+
+		if symbol == "" {
+			bot.Send(tgbotapi.NewMessage(chatID, "Please provide a symbol (e.g., /funding_rate ETHUSDT)."))
+			return
+		}
+
+		rate, exists := FuturesFundingRates[symbol]
+		if !exists || rate == 0 {
+			bot.Send(tgbotapi.NewMessage(chatID, "Funding rate for "+symbol+" is not available yet. Please try again later."))
+			return
+		}
+		message := fmt.Sprintf("Current  %s future funding rate: %.4f", symbol, rate)
+		_, err := bot.Send(tgbotapi.NewMessage(chatID, message))
+		if err != nil {
+			log.Println("Error sending message:", err)
+		}
+	case strings.HasPrefix(command, "/cd"):
+		symbol := strings.TrimSpace(strings.TrimPrefix(command, "/cd"))
+
+		if symbol == "" {
+			bot.Send(tgbotapi.NewMessage(chatID, "Please provide a symbol (e.g., /funding_rate_countdown ETHUSDT)."))
+			return
+		}
+
+		countdown, exists := FuturesFundingRateCountdown[symbol]
+		if !exists || countdown == 0 {
+			bot.Send(tgbotapi.NewMessage(chatID, "Funding rate countdown for "+symbol+" is not available yet. Please try again later."))
+			return
+		}
+		countdown1 := time.Until(time.Unix(countdown/1000, 0))
+		message := fmt.Sprintf("Current  %s future funding rate countdown: %v", symbol, countdown1.Round(time.Second))
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, message))
 		if err != nil {
 			log.Println("Error sending message:", err)
