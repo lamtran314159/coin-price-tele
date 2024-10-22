@@ -4,6 +4,10 @@ import (
 	"context"
 	"log"
 	"telegram-bot/bot/handlers"
+	"time"
+	"encoding/json"
+	"fmt"
+	"net/http"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -41,14 +45,77 @@ var commands = []tgbotapi.BotCommand{
 	},
 }
 
+const (
+    btcThreshold = 65000.0 // Set your threshold here
+    checkInterval = 1 * time.Minute // Check every minute
+)
+
+// PriceResponse represents the response from the Binance API
+type PriceResponse struct {
+    Symbol string `json:"symbol"`
+    Price  string `json:"price"`
+}
+
+// Function to fetch the current BTC price from Binance
+func fetchBTCPrice(symbol string) (float64, error) {
+	//Symbol and threadhold set by user
+	log.Printf("https://api.binance.com/api/v3/ticker/price?symbol="+symbol)
+    resp, err := http.Get("https://api.binance.com/api/v3/ticker/price?symbol="+symbol)
+    if err != nil {
+        return 0, err
+    }
+    defer resp.Body.Close()
+
+    var priceResponse PriceResponse
+    if err := json.NewDecoder(resp.Body).Decode(&priceResponse); err != nil {
+        return 0, err
+    }
+
+    // Convert price to float64
+    var price float64
+    if _, err := fmt.Sscanf(priceResponse.Price, "%f", &price); err != nil {
+        return 0, err
+    }
+
+    return price, nil
+}
+
+// Function to monitor BTC price
+func MonitorBTCPrice(bot *tgbotapi.BotAPI, chatID int64, symbol string) {
+    for {
+        price, err := fetchBTCPrice(symbol)
+        if err != nil {
+            log.Println("Error fetching %s price:", symbol, err)
+            continue
+        }
+
+        log.Printf("Current %s price: %.2f USDT", symbol, price)
+
+        if price > btcThreshold {
+            msg := tgbotapi.NewMessage(chatID, "🚨 Alert: price has exceeded 65,000 USDT! Current price: "+fmt.Sprintf("%.2f", price))
+            bot.Send(msg)
+        }
+
+        time.Sleep(checkInterval)
+    }
+}
+
 // Initialize the bot with the token
-func InitBot(token string) (*tgbotapi.BotAPI, error) {
+func InitBot(token string, webhookURL string) (*tgbotapi.BotAPI, error) {
 	var err error
 	bot, err = tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return nil, err
 	}
 	bot.Debug = false // Set to true if you want to debug interactions
+	webhook, err := tgbotapi.NewWebhook(webhookURL)
+	if err != nil {
+		return nil, err
+	}
+	_, err = bot.Request(webhook)
+	if err != nil {
+		return nil, err
+	}
 	_, err = bot.Request(tgbotapi.NewSetMyCommands(commands...))
 	if err != nil {
 		log.Panic(err)
@@ -65,6 +132,19 @@ func Start(ctx context.Context, bot *tgbotapi.BotAPI) {
 
 	// Pass updates to handler
 	go receiveUpdates(ctx, updates)
+}
+
+//Start listening update from webhook
+func StartWebhook(bot *tgbotapi.BotAPI){
+	//Create the update channel using ListenForWebhook
+	updates := bot.ListenForWebhook("/webhook")
+	for update := range updates{
+		if update.Message != nil {
+			handlers.HandleMessage(update.Message, bot)
+		} else if update.CallbackQuery != nil {
+			handlers.HandleButton(update.CallbackQuery, bot)
+		}
+	}
 }
 
 // Receive updates and pass them to handlers
