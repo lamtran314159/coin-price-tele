@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 	"sync"
+
 	"telegram-bot/services"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -23,7 +24,10 @@ func HandleMessage(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 	log.Printf("%s wrote: %s", user.FirstName, text)
 
 	if strings.HasPrefix(text, "/") {
-		handleCommand(message.Chat.ID, text, bot, user)
+		parts := strings.Fields(text)
+		command := parts[0]
+		args := parts[1:]
+		handleCommand(message.Chat.ID, command, args, bot, user)
 	} else if screaming {
 		_, err := bot.Send(sendScreamedMessage(message))
 		if err != nil {
@@ -38,7 +42,7 @@ func HandleMessage(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 }
 
 // Handle commands (e.g., /scream, /whisper, /menu)
-func handleCommand(chatID int64, command string, bot *tgbotapi.BotAPI, user *tgbotapi.User) {
+func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.BotAPI, user *tgbotapi.User) {
 	fmt.Println(user.ID)
 	switch command {
 	case "/help":
@@ -94,6 +98,40 @@ func handleCommand(chatID int64, command string, bot *tgbotapi.BotAPI, user *tgb
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
+
+	case "/price_spot":
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /price_spot <symbol>")
+			bot.Send(msg)
+			return
+		}
+		symbol := args[0]
+		go GetSpotPrice(chatID, symbol, bot)
+	case "/price_future":
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /price_future <symbol>")
+			bot.Send(msg)
+			return
+		}
+		symbol := args[0]
+		go GetFuturePrice(chatID, symbol, bot)
+	case "/funding_rate":
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /funding_rate <symbol>")
+			bot.Send(msg)
+			return
+		}
+		symbol := args[0]
+		go GetFundingRate(chatID, symbol, bot)
+	case "/funding_rate_countdown":
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /funding_rate_countdown <symbol>")
+			bot.Send(msg)
+			return
+		}
+
+		symbol := args[0]
+		go GetFundingRateCountdown(chatID, symbol, bot)
 	}
 }
 
