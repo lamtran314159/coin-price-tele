@@ -44,5 +44,5 @@ var commandList = []string{
 	"/whisper - Disable screaming mode",
 	"/menu - Show menu with buttons",
 	"/help - Show available commands",
-	"/kline - Fetches Kline data for a specific trading pair and interval",
+	"/kline <symbol> <interval> [limit] [startTime] [endTime] - Get Kline data for a symbol",
 }

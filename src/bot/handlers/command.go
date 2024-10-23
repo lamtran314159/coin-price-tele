@@ -85,10 +85,8 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 			log.Println("Error sending message:", err)
 		}
 	case "/kline":
-		fmt.Println(args)
-
 		if len(args) < 2 {
-			msg := tgbotapi.NewMessage(chatID, "Usage: /kline <symbol> <interval> [limit]")
+			msg := tgbotapi.NewMessage(chatID, "Usage: /kline <symbol> <interval> [limit] [startTime] [endTime]")
 			bot.Send(msg)
 			return
 		}
@@ -150,9 +148,19 @@ func copyMessage(message *tgbotapi.Message) tgbotapi.MessageConfig {
 	return msg
 }
 
-func getKlineData(symbol string, interval string, limit int) (string, error) {
+func getKlineData(symbol string, interval string, options ...int) (string, error) {
 	// Define the API endpoint
-	apiURL := fmt.Sprintf("https://api.binance.com/api/v3/klines?symbol=%s&interval=%s&limit=%d", symbol, interval, limit)
+	apiURL := fmt.Sprintf("https://api.binance.com/api/v3/klines?symbol=%s&interval=%s", symbol, interval)
+
+	// Request Limit parameter
+	if len(options) > 0 {
+		apiURL = fmt.Sprintf("%s&limit=%d", apiURL, options[0])
+	}
+
+	// Request StartTime parameter
+	if len(options) > 1 {
+		apiURL = fmt.Sprintf("%s&limit=%d", apiURL, options[0])
+	}
 
 	// Make the GET request
 	resp, err := http.Get(apiURL)
