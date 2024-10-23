@@ -9,7 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
+
+	//"time"
 
 	"github.com/coder/websocket"
 )
@@ -22,8 +23,8 @@ var FuturesFundingRateCountdown = make(map[string]int64) // New map for funding 
 var mu1 sync.Mutex
 
 // Fetch the list of available symbols from Binance API (for Spot trading)
-func FetchBinanceSymbols1() ([]string, error) {
-	resp, err := http.Get("https://api.binance.com/api/v3/exchangeInfo")
+func FetchBinanceSymbols_Futures() ([]string, error) {
+	resp, err := http.Get("https://fapi.binance.com/fapi/v1/exchangeInfo")
 	if err != nil {
 		return nil, err
 	}
@@ -50,71 +51,66 @@ func FetchBinanceSymbols1() ([]string, error) {
 }
 
 // Start WebSocket to listen for Futures data, including funding rate and countdown
-func StartFuturesWebSocket(symbol string) {
+func StartWebSocket_Futures(symbol string) {
 	ctx := context.Background()
 	url := fmt.Sprintf("wss://fstream.binance.com/ws/%s@markPrice@1s", strings.ToLower(symbol))
 
-	client := &http.Client{
-		Timeout: 20 * time.Second, // Set timeout to 30 seconds
+	conn, _, err := websocket.Dial(ctx, url, &websocket.DialOptions{
+		HTTPClient: &http.Client{},
+	})
+	/*client := &http.Client{
+		Timeout: 20 * time.Second, // Set timeout to 20 seconds
 	}
 
-	// Retry mechanism, retry up to 3 times
-	for retries := 0; retries < 3; retries++ {
-		conn, _, err := websocket.Dial(ctx, url, &websocket.DialOptions{
-			HTTPClient: client,
-		})
-		if err == nil {
-			defer conn.Close(websocket.StatusInternalError, "Internal error")
+	// Attempt to connect to WebSocket
+	conn, _, err := websocket.Dial(ctx, url, &websocket.DialOptions{
+		HTTPClient: client,
+	})*/
 
-			// Connection succeeded, start reading messages
-			for {
-				_, message, err := conn.Read(ctx)
-				if err != nil {
-					log.Printf("Failed to read message for Futures %s: %v", symbol, err)
-					break // Break the reading loop, allow retry logic to continue
-				}
+	if err != nil {
+		//log.Printf("Failed to connect to WebSocket for Futures %s: %v", symbol, err)
+		return // Skip to the next symbol if the connection fails
+	}
+	defer conn.Close(websocket.StatusInternalError, "Internal error")
 
-				var result struct {
-					Symbol          string `json:"s"` // Symbol
-					MarkPrice       string `json:"p"` // Mark Price
-					FundingRate     string `json:"r"` // Funding Rate
-					NextFundingTime int64  `json:"T"` // Time until next funding rate (in milliseconds)
-				}
-				if err := json.Unmarshal(message, &result); err != nil {
-					log.Printf("Failed to parse message for Futures %s: %v", symbol, err)
-					continue
-				}
-
-				markPrice, err := strconv.ParseFloat(result.MarkPrice, 64)
-				if err != nil {
-					log.Printf("Failed to convert Futures price to float64 for %s: %v", symbol, err)
-					continue
-				}
-
-				fundingRate, err := strconv.ParseFloat(result.FundingRate, 64)
-				if err != nil {
-					log.Printf("Failed to convert Futures funding rate to float64 for %s: %v", symbol, err)
-					continue
-				}
-
-				// Update mark price, funding rate, and countdown
-				mu1.Lock()
-				//log.Printf("Symbol: %s", result.Symbol)
-				FuturesPrices[result.Symbol] = markPrice
-				FuturesFundingRates[result.Symbol] = fundingRate
-				FuturesFundingRateCountdown[result.Symbol] = result.NextFundingTime
-				mu1.Unlock()
-			}
-		} else {
-			log.Printf("Failed to connect to WebSocket for Futures %s: %v", symbol, err)
+	// Connection succeeded, start reading messages
+	for {
+		_, message, err := conn.Read(ctx)
+		if err != nil {
+			log.Printf("Failed to read message for Futures %s: %v", symbol, err)
+			break // Break the loop if reading fails
 		}
 
-		// If the connection failed, retry after waiting for 5 seconds
-		log.Printf("Retrying connection to WebSocket for %s (%d/3)...", symbol, retries+1)
-		time.Sleep(5 * time.Second) // Wait 5 seconds before retrying
-	}
+		var result struct {
+			Symbol          string `json:"s"` // Symbol
+			MarkPrice       string `json:"p"` // Mark Price
+			FundingRate     string `json:"r"` // Funding Rate
+			NextFundingTime int64  `json:"T"` // Time until next funding rate (in milliseconds)
+		}
+		if err := json.Unmarshal(message, &result); err != nil {
+			log.Printf("Failed to parse message for Futures %s: %v", symbol, err)
+			continue
+		}
 
-	log.Fatalf("Failed to connect to WebSocket for Futures %s after 3 retries", symbol)
+		markPrice, err := strconv.ParseFloat(result.MarkPrice, 64)
+		if err != nil {
+			log.Printf("Failed to convert Futures price to float64 for %s: %v", symbol, err)
+			continue
+		}
+
+		fundingRate, err := strconv.ParseFloat(result.FundingRate, 64)
+		if err != nil {
+			log.Printf("Failed to convert Futures funding rate to float64 for %s: %v", symbol, err)
+			continue
+		}
+
+		// Update mark price, funding rate, and countdown
+		mu1.Lock()
+		FuturesPrices[result.Symbol] = markPrice
+		FuturesFundingRates[result.Symbol] = fundingRate
+		FuturesFundingRateCountdown[result.Symbol] = result.NextFundingTime
+		mu1.Unlock()
+	}
 }
 
 // Get the price of a cryptocurrency symbol
@@ -151,13 +147,13 @@ func GetFundingRateCountdown(symbol string) (int64, bool) {
 }
 
 // Fetch symbols and start WebSocket for Futures
-func FetchAndStartFuturesWebSocket() {
-	symbols, err := FetchBinanceSymbols1()
+func FetchAndStartWebSocket_Futures() {
+	symbols, err := FetchBinanceSymbols_Futures()
 	if err != nil {
 		log.Fatalf("Failed to fetch Binance symbols: %v", err)
 	}
 	// Start WebSocket to get futures data for all symbols
 	for _, symbol := range symbols {
-		go StartFuturesWebSocket(symbol)
+		go StartWebSocket_Futures(symbol)
 	}
 }

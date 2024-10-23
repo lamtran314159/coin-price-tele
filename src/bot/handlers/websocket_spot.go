@@ -10,15 +10,17 @@ import (
 	"strings"
 	"sync"
 
+	//"time"
+
 	"github.com/coder/websocket"
 )
 
 // Global variables to store prices for multiple symbols
-var CryptoPrices = make(map[string]float64)
+var SpotPrices = make(map[string]float64)
 var mu sync.Mutex
 
 // Fetch the list of available symbols from Binance API
-func FetchBinanceSymbols() ([]string, error) {
+func FetchBinanceSymbols_Spot() ([]string, error) {
 	resp, err := http.Get("https://api.binance.com/api/v3/exchangeInfo")
 	if err != nil {
 		return nil, err
@@ -47,15 +49,24 @@ func FetchBinanceSymbols() ([]string, error) {
 }
 
 // Start WebSocket to listen for a single crypto price
-func StartCryptoWebSocket(symbol string) {
+func StartWebSocket_Spot(symbol string) {
 	ctx := context.Background()
 	url := fmt.Sprintf("wss://stream.binance.com:9443/ws/%s@trade", strings.ToLower(symbol))
 
 	conn, _, err := websocket.Dial(ctx, url, &websocket.DialOptions{
 		HTTPClient: &http.Client{},
 	})
+	/*client := &http.Client{
+		Timeout: 20 * time.Second, // Set timeout to 20 seconds
+	}
+
+	// Attempt to connect to WebSocket
+	conn, _, err := websocket.Dial(ctx, url, &websocket.DialOptions{
+		HTTPClient: client,
+	})*/
 	if err != nil {
-		log.Fatalf("Failed to connect to WebSocket for %s: %v", symbol, err)
+		//log.Printf("Failed to connect to WebSocket for %s: %v", symbol, err)
+		return // Skip to the next symbol if the connection fails
 	}
 	defer conn.Close(websocket.StatusInternalError, "Internal error")
 
@@ -63,13 +74,14 @@ func StartCryptoWebSocket(symbol string) {
 		_, message, err := conn.Read(ctx)
 		if err != nil {
 			log.Printf("Failed to read message for %s: %v", symbol, err)
-			continue
+			break // Break the loop and exit if reading fails
 		}
 
 		var result struct {
 			Symbol string `json:"s"`
 			Price  string `json:"p"`
 		}
+
 		if err := json.Unmarshal(message, &result); err != nil {
 			log.Printf("Failed to parse message for %s: %v", symbol, err)
 			continue
@@ -80,36 +92,33 @@ func StartCryptoWebSocket(symbol string) {
 			log.Printf("Failed to convert price to float64 for %s: %v", symbol, err)
 			continue
 		}
-
 		// Update price for the respective symbol
 		mu.Lock()
-		//log.Printf("Symbol: %s", result.Symbol)
-		//log.Printf("Price: %f", price)
-		CryptoPrices[result.Symbol] = price
-
+		//log.Printf("Price for %s: %.4f", symbol, price)
+		SpotPrices[result.Symbol] = price
 		mu.Unlock()
 	}
 }
 
 // Get the price of a cryptocurrency symbol
-func GetCryptoPrice(symbol string) (float64, bool) {
+func GetSpotPrice(symbol string) (float64, bool) {
 	mu.Lock()
 	defer mu.Unlock()
-	price, exists := CryptoPrices[symbol]
+	price, exists := SpotPrices[symbol]
 	if !exists {
 		return 0, false
 	}
 	return price, exists
 }
 
-func FetchandStartWebSocket() {
-	symbols, err := FetchBinanceSymbols()
+func FetchandStartWebSocket_Spot() {
+	symbols, err := FetchBinanceSymbols_Spot()
 	if err != nil {
 		log.Fatalf("Failed to fetch Binance symbols: %v", err)
 	}
 	// Start WebSocket to get prices for all symbols
 	for _, symbol := range symbols {
 		//log.Printf("Starting WebSocket for symbol: %s", symbol)
-		go StartCryptoWebSocket(symbol)
+		go StartWebSocket_Spot(symbol)
 	}
 }

@@ -83,7 +83,7 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 			log.Println("Error sending message:", err)
 		}
 	case "/price_spot":
-		fmt.Println(args)
+		//fmt.Println(args)
 
 		if len(args) < 1 {
 			msg := tgbotapi.NewMessage(chatID, "Usage: /price_spot <symbol>")
@@ -93,18 +93,18 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 
 		symbol := args[0]
 
-		price, exists := CryptoPrices[symbol]
+		price, exists := SpotPrices[symbol]
 		if !exists || price == 0 {
 			bot.Send(tgbotapi.NewMessage(chatID, "Spot price for "+symbol+" is not available yet. Please try again later."))
 			return
 		}
-		message := fmt.Sprintf("Current  %s spot price: $%.4f", symbol, price)
+		message := fmt.Sprintf("Spot price | %s |  %.4f", symbol, price)
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, message))
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
 	case "/price_future":
-		fmt.Println(args)
+		//fmt.Println(args)
 
 		if len(args) < 1 {
 			msg := tgbotapi.NewMessage(chatID, "Usage: /price_future <symbol>")
@@ -119,13 +119,13 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 			bot.Send(tgbotapi.NewMessage(chatID, "Future price for "+symbol+" is not available yet. Please try again later."))
 			return
 		}
-		message := fmt.Sprintf("Current  %s future price: $%.4f", symbol, price)
+		message := fmt.Sprintf("Future price | %s |  %.4f", symbol, price)
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, message))
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
 	case "/funding_rate":
-		fmt.Println(args)
+		//fmt.Println(args)
 
 		if len(args) < 1 {
 			msg := tgbotapi.NewMessage(chatID, "Usage: /funding_rate <symbol>")
@@ -140,13 +140,13 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 			bot.Send(tgbotapi.NewMessage(chatID, "Funding rate for "+symbol+" is not available yet. Please try again later."))
 			return
 		}
-		message := fmt.Sprintf("Current  %s future funding rate: $%.4f", symbol, rate)
+		message := fmt.Sprintf("Funding rate | %s |  %.5f%%", symbol, rate)
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, message))
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
 	case "/funding_rate_countdown":
-		fmt.Println(args)
+		//fmt.Println(args)
 
 		if len(args) < 1 {
 			msg := tgbotapi.NewMessage(chatID, "Usage: /funding_rate_countdown <symbol>")
@@ -162,7 +162,7 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 			return
 		}
 		countdown1 := time.Until(time.Unix(countdown/1000, 0))
-		message := fmt.Sprintf("Current  %s future funding rate countdown: %v", symbol, countdown1.Round(time.Second))
+		message := fmt.Sprintf("Funding rate countdown | %s |  %v", symbol, countdown1.Round(time.Second))
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, message))
 		if err != nil {
 			log.Println("Error sending message:", err)

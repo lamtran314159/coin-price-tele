@@ -44,4 +44,8 @@ var commandList = []string{
 	"/whisper - Disable screaming mode",
 	"/menu - Show menu with buttons",
 	"/help - Show available commands",
+	"/spot_price <symbol> - Fetch the latest spot price of a cryptocurrency",
+	"/future_price <symbol> - Fetch the latest futures price of a cryptocurrency",
+	"/funding_rate <symbol> - Fetch the latest funding rate of a cryptocurrency",
+	"/funding_rate_countdown <symbol> - Fetch the latest funding rate countdown of a cryptocurrency",
 }
