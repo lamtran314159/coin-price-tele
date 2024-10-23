@@ -1,53 +1,15 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/coder/websocket"
 
 	"telegram-bot/services"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
-
-const (
-	binanceSpotWSURL   = "wss://stream.binance.com:9443/ws"
-	binanceFutureWSURL = "wss://fstream.binance.com/ws"
-)
-
-var conn *websocket.Conn
-
-func connectWebSocket(url string) error {
-	var err error
-	// Create a background context
-	ctx := context.Background()
-	conn, _, err = websocket.Dial(ctx, url, nil)
-	return err
-}
-
-func subscribeToStream(stream string) error {
-	// Create a background context for the write operation
-	ctx := context.Background()
-	subscribeMsg := fmt.Sprintf(`{"method": "SUBSCRIBE", "params":["%s"], "id": 1}`, stream)
-	return conn.Write(ctx, websocket.MessageText, []byte(subscribeMsg))
-}
-
-func formatNumber(value interface{}) string {
-	switch v := value.(type) {
-	case string:
-		if f, err := strconv.ParseFloat(v, 64); err == nil {
-			return fmt.Sprintf("%g", f)
-		}
-	case float64:
-		return fmt.Sprintf("%g", v)
-	}
-	return fmt.Sprintf("%v", value)
-}
 
 var userTokens = struct {
 	sync.RWMutex
@@ -144,7 +106,7 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 			return
 		}
 		symbol := args[0]
-		go getSpotPrice(chatID, symbol, bot)
+		go GetSpotPrice(chatID, symbol, bot)
 	case "/price_future":
 		if len(args) < 1 {
 			msg := tgbotapi.NewMessage(chatID, "Usage: /price_future <symbol>")
@@ -152,7 +114,7 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 			return
 		}
 		symbol := args[0]
-		go getFuturePrice(chatID, symbol, bot)
+		go GetFuturePrice(chatID, symbol, bot)
 	case "/funding_rate":
 		if len(args) < 1 {
 			msg := tgbotapi.NewMessage(chatID, "Usage: /funding_rate <symbol>")
@@ -160,7 +122,7 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 			return
 		}
 		symbol := args[0]
-		go getFundingRate(chatID, symbol, bot)
+		go GetFundingRate(chatID, symbol, bot)
 	case "/funding_rate_countdown":
 		if len(args) < 1 {
 			msg := tgbotapi.NewMessage(chatID, "Usage: /funding_rate_countdown <symbol>")
@@ -169,7 +131,24 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 		}
 
 		symbol := args[0]
-		go getFundingRateCountdown(chatID, symbol, bot)
+		go GetFundingRateCountdown(chatID, symbol, bot)
 	}
 }
 
+func sendMenu(chatID int64) tgbotapi.MessageConfig {
+	msg := tgbotapi.NewMessage(chatID, firstMenu)
+	msg.ParseMode = tgbotapi.ModeHTML
+	msg.ReplyMarkup = firstMenuMarkup
+	return msg
+}
+
+func sendScreamedMessage(message *tgbotapi.Message) tgbotapi.MessageConfig {
+	msg := tgbotapi.NewMessage(message.Chat.ID, strings.ToUpper(message.Text))
+	msg.ParseMode = tgbotapi.ModeHTML
+	return msg
+}
+
+func copyMessage(message *tgbotapi.Message) tgbotapi.MessageConfig {
+	msg := tgbotapi.NewMessage(message.Chat.ID, message.Text)
+	return msg
+}
