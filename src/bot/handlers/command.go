@@ -1,15 +1,16 @@
 package handlers
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"sync"
-	
-	"encoding/json"
-	"strconv"
 	"time"
-	"github.com/gorilla/websocket"
+
+	"github.com/coder/websocket"
 
 	"telegram-bot/services"
 
@@ -17,33 +18,37 @@ import (
 )
 
 const (
-    binanceSpotWSURL   = "wss://stream.binance.com:9443/ws"
-    binanceFutureWSURL = "wss://fstream.binance.com/ws"
+	binanceSpotWSURL   = "wss://stream.binance.com:9443/ws"
+	binanceFutureWSURL = "wss://fstream.binance.com/ws"
 )
 
 var conn *websocket.Conn
 
 func connectWebSocket(url string) error {
-    var err error
-    conn, _, err = websocket.DefaultDialer.Dial(url, nil)
-    return err
+	var err error
+	// Create a background context
+	ctx := context.Background()
+	conn, _, err = websocket.Dial(ctx, url, nil)
+	return err
 }
 
 func subscribeToStream(stream string) error {
-    subscribeMsg := fmt.Sprintf(`{"method": "SUBSCRIBE", "params":["%s"], "id": 1}`, stream)
-    return conn.WriteMessage(websocket.TextMessage, []byte(subscribeMsg))
+	// Create a background context for the write operation
+	ctx := context.Background()
+	subscribeMsg := fmt.Sprintf(`{"method": "SUBSCRIBE", "params":["%s"], "id": 1}`, stream)
+	return conn.Write(ctx, websocket.MessageText, []byte(subscribeMsg))
 }
 
 func formatNumber(value interface{}) string {
-    switch v := value.(type) {
-    case string:
-        if f, err := strconv.ParseFloat(v, 64); err == nil {
-            return fmt.Sprintf("%g", f)
-        }
-    case float64:
-        return fmt.Sprintf("%g", v)
-    }
-    return fmt.Sprintf("%v", value)
+	switch v := value.(type) {
+	case string:
+		if f, err := strconv.ParseFloat(v, 64); err == nil {
+			return fmt.Sprintf("%g", f)
+		}
+	case float64:
+		return fmt.Sprintf("%g", v)
+	}
+	return fmt.Sprintf("%v", value)
 }
 
 var userTokens = struct {
@@ -59,7 +64,10 @@ func HandleMessage(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 	log.Printf("%s wrote: %s", user.FirstName, text)
 
 	if strings.HasPrefix(text, "/") {
-		handleCommand(message.Chat.ID, text, bot, user)
+		parts := strings.Fields(text)
+		command := parts[0]
+		args := parts[1:]
+		handleCommand(message.Chat.ID, command, args, bot, user)
 	} else if screaming {
 		_, err := bot.Send(sendScreamedMessage(message))
 		if err != nil {
@@ -74,16 +82,15 @@ func HandleMessage(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 }
 
 // Handle commands (e.g., /scream, /whisper, /menu)
-func handleCommand(chatID int64, command string, bot *tgbotapi.BotAPI, user *tgbotapi.User) {
+func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.BotAPI, user *tgbotapi.User) {
 	fmt.Println(user.ID)
-	//isPriceCommand := strings.HasPrefix(command, "/p ")
-	switch {
-	case command == "/help":
+	switch command {
+	case "/help":
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, strings.Join(commandList, "\n")))
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	case command == "/start":
+	case "/start":
 		token, err := services.AuthenticateUser(user.ID)
 		if err != nil {
 			_, err := bot.Send(tgbotapi.NewMessage(chatID, "Access denied."))
@@ -103,24 +110,24 @@ func handleCommand(chatID int64, command string, bot *tgbotapi.BotAPI, user *tgb
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	case command == "/scream":
+	case "/scream":
 		screaming = true
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, "Screaming mode enabled."))
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	case command == "/whisper":
+	case "/whisper":
 		screaming = false
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, "Screaming mode disabled."))
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	case command == "/menu":
+	case "/menu":
 		_, err := bot.Send(sendMenu(chatID))
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	case command == "/protected":
+	case "/protected":
 		token := userTokens.m[int(user.ID)]
 		response, err := services.ValidateToken(token)
 		if err != nil {
@@ -131,38 +138,39 @@ func handleCommand(chatID int64, command string, bot *tgbotapi.BotAPI, user *tgb
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
-	// case isPriceCommand: // Handle the /p <symbol> command
-	// 	symbol := strings.TrimSpace(command[3:])
 
-	// 	if symbol == "" {
-	// 		bot.Send(tgbotapi.NewMessage(chatID, "Please provide a symbol (e.g., /p eth)."))
-	// 		return
-	// 	}
-	// 	//log.Printf("Symbol: %s", symbol)
-	// 	price, exists := CryptoPrices[strings.ToUpper(symbol)+"USDT"]
-	// 	//log.Printf(strings.ToUpper(symbol) + "USDT")
-	// 	//log.Printf("Price: %f, Exists: %t", price, exists)
-	// 	if !exists || price == 0 {
-	// 		bot.Send(tgbotapi.NewMessage(chatID, "Price for "+symbol+" is not available yet. Please try again later."))
-	// 		return
-	// 	}
-	// 	message := fmt.Sprintf("Current %s price: $%.4f", symbol, price)
-	// 	_, err := bot.Send(tgbotapi.NewMessage(chatID, message))
-	// 	if err != nil {
-	// 		log.Println("Error sending message:", err)
-	// 	}
-	// }
-	case strings.HasPrefix(command, "/p_spot"):
-		symbol := strings.TrimSpace(strings.TrimPrefix(command, "/p_spot"))
+	case "/price_spot":
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /price_spot <symbol>")
+			bot.Send(msg)
+			return
+		}
+		symbol := args[0]
 		go getSpotPrice(chatID, symbol, bot)
-	case strings.HasPrefix(command, "/p_future"):
-		symbol := strings.TrimSpace(strings.TrimPrefix(command, "/p_future"))
+	case "/price_future":
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /price_future <symbol>")
+			bot.Send(msg)
+			return
+		}
+		symbol := args[0]
 		go getFuturePrice(chatID, symbol, bot)
-	case strings.HasPrefix(command, "/fundRate"):
-		symbol := strings.TrimSpace(strings.TrimPrefix(command, "/fundRate"))
+	case "/funding_rate":
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /funding_rate <symbol>")
+			bot.Send(msg)
+			return
+		}
+		symbol := args[0]
 		go getFundingRate(chatID, symbol, bot)
-	case strings.HasPrefix(command, "/fundRateCDown"):
-		symbol := strings.TrimSpace(strings.TrimPrefix(command, "/fundRateCDown"))
+	case "/funding_rate_countdown":
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /funding_rate_countdown <symbol>")
+			bot.Send(msg)
+			return
+		}
+
+		symbol := args[0]
 		go getFundingRateCountdown(chatID, symbol, bot)
 	}
 }
@@ -186,142 +194,150 @@ func copyMessage(message *tgbotapi.Message) tgbotapi.MessageConfig {
 }
 
 func getSpotPrice(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
-    if err := connectWebSocket(binanceSpotWSURL); err != nil {
-        log.Println("Lỗi kết nối WebSocket:", err)
-        return
-    }
-    defer conn.Close()
+	// Create a background context for WebSocket connection
+	ctx := context.Background()
+	if err := connectWebSocket(binanceSpotWSURL); err != nil {
+		log.Println("Lỗi kết nối WebSocket:", err)
+		return
+	}
+	defer conn.Close(websocket.StatusNormalClosure, "closing")
 
-    stream := strings.ToLower(symbol) + "@ticker"
-    if err := subscribeToStream(stream); err != nil {
-        log.Println("Lỗi đăng ký stream:", err)
-        return
-    }
+	stream := strings.ToLower(symbol) + "@ticker"
+	if err := subscribeToStream(stream); err != nil {
+		log.Println("Lỗi đăng ký stream:", err)
+		return
+	}
 
-    for {
-        _, message, err := conn.ReadMessage()
-        if err != nil {
-            log.Println("Lỗi đọc tin nhắn:", err)
-            return
-        }
+	for {
+		_, message, err := conn.Read(ctx)
+		if err != nil {
+			log.Println("Lỗi đọc tin nhắn:", err)
+			return
+		}
 
-        var data map[string]interface{}
-        if err := json.Unmarshal(message, &data); err != nil {
-            log.Println("Lỗi giải mã JSON:", err)
-            continue
-        }
+		var data map[string]interface{}
+		if err := json.Unmarshal(message, &data); err != nil {
+			log.Println("Lỗi giải mã JSON:", err)
+			continue
+		}
 
-        if price, ok := data["c"]; ok {
-            formattedPrice := formatNumber(price)
-            msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Giá Spot hiện tại của %s: %s", symbol, formattedPrice))
-            bot.Send(msg)
-            return
-        }
-    }
+		if price, ok := data["c"]; ok {
+			formattedPrice := formatNumber(price)
+			msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Spot price | %s |  %s", symbol, formattedPrice))
+			bot.Send(msg)
+			return
+		}
+	}
 }
 
 func getFuturePrice(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
-    if err := connectWebSocket(binanceFutureWSURL); err != nil {
-        log.Println("Lỗi kết nối WebSocket:", err)
-        return
-    }
-    defer conn.Close()
+	// Create a background context for WebSocket connection
+	ctx := context.Background()
+	if err := connectWebSocket(binanceFutureWSURL); err != nil {
+		log.Println("Lỗi kết nối WebSocket:", err)
+		return
+	}
+	defer conn.Close(websocket.StatusNormalClosure, "closing")
 
-    stream := strings.ToLower(symbol) + "@markPrice"
-    if err := subscribeToStream(stream); err != nil {
-        log.Println("Lỗi đăng ký stream:", err)
-        return
-    }
+	stream := strings.ToLower(symbol) + "@markPrice"
+	if err := subscribeToStream(stream); err != nil {
+		log.Println("Lỗi đăng ký stream:", err)
+		return
+	}
 
-    for {
-        _, message, err := conn.ReadMessage()
-        if err != nil {
-            log.Println("Lỗi đọc tin nhắn:", err)
-            return
-        }
+	for {
+		_, message, err := conn.Read(ctx)
+		if err != nil {
+			log.Println("Lỗi đọc tin nhắn:", err)
+			return
+		}
 
-        var data map[string]interface{}
-        if err := json.Unmarshal(message, &data); err != nil {
-            log.Println("Lỗi giải mã JSON:", err)
-            continue
-        }
+		var data map[string]interface{}
+		if err := json.Unmarshal(message, &data); err != nil {
+			log.Println("Lỗi giải mã JSON:", err)
+			continue
+		}
 
-        if price, ok := data["p"]; ok {
-            formattedPrice := formatNumber(price)
-            msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Giá Future hiện tại của %s: %s", symbol, formattedPrice))
-            bot.Send(msg)
-            return
-        }
-    }
+		if price, ok := data["p"]; ok {
+			formattedPrice := formatNumber(price)
+			msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Future price | %s |  %s", symbol, formattedPrice))
+			bot.Send(msg)
+			return
+		}
+	}
 }
 
 func getFundingRate(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
-    if err := connectWebSocket(binanceFutureWSURL); err != nil {
-        log.Println("Lỗi kết nối WebSocket:", err)
-        return
-    }
-    defer conn.Close()
+	// Create a background context for WebSocket connection
+	ctx := context.Background()
+	if err := connectWebSocket(binanceFutureWSURL); err != nil {
+		log.Println("Lỗi kết nối WebSocket:", err)
+		return
+	}
+	defer conn.Close(websocket.StatusNormalClosure, "closing")
 
-    stream := strings.ToLower(symbol) + "@markPrice"
-    if err := subscribeToStream(stream); err != nil {
-        log.Println("Lỗi đăng ký stream:", err)
-        return
-    }
+	stream := strings.ToLower(symbol) + "@markPrice"
+	if err := subscribeToStream(stream); err != nil {
+		log.Println("Lỗi đăng ký stream:", err)
+		return
+	}
 
-    for {
-        _, message, err := conn.ReadMessage()
-        if err != nil {
-            log.Println("Lỗi đọc tin nhắn:", err)
-            return
-        }
+	for {
+		_, message, err := conn.Read(ctx)
+		if err != nil {
+			log.Println("Lỗi đọc tin nhắn:", err)
+			return
+		}
 
-        var data map[string]interface{}
-        if err := json.Unmarshal(message, &data); err != nil {
-            log.Println("Lỗi giải mã JSON:", err)
-            continue
-        }
+		var data map[string]interface{}
+		if err := json.Unmarshal(message, &data); err != nil {
+			log.Println("Lỗi giải mã JSON:", err)
+			continue
+		}
 
-        if rate, ok := data["r"]; ok {
-            formattedRate := formatNumber(rate)
-            msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Funding Rate hiện tại của %s: %s", symbol, formattedRate))
-            bot.Send(msg)
-            return
-        }
-    }
+		if fundingRate, ok := data["r"]; ok {
+			formattedFundingRate := formatNumber(fundingRate)
+			msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Funding rate | %s |  %s", symbol, formattedFundingRate))
+			bot.Send(msg)
+			return
+		}
+	}
 }
 
 func getFundingRateCountdown(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
-    if err := connectWebSocket(binanceFutureWSURL); err != nil {
-        log.Println("Lỗi kết nối WebSocket:", err)
-        return
-    }
-    defer conn.Close()
+	// Create a background context for WebSocket connection
+	ctx := context.Background()
+	if err := connectWebSocket(binanceFutureWSURL); err != nil {
+		log.Println("Lỗi kết nối WebSocket:", err)
+		return
+	}
+	defer conn.Close(websocket.StatusNormalClosure, "closing")
 
-    stream := strings.ToLower(symbol) + "@markPrice"
-    if err := subscribeToStream(stream); err != nil {
-        log.Println("Lỗi đăng ký stream:", err)
-        return
-    }
+	stream := strings.ToLower(symbol) + "@markPrice"
+	if err := subscribeToStream(stream); err != nil {
+		log.Println("Lỗi đăng ký stream:", err)
+		return
+	}
 
-    for {
-        _, message, err := conn.ReadMessage()
-        if err != nil {
-            log.Println("Lỗi đọc tin nhắn:", err)
-            return
-        }
+	for {
+		_, message, err := conn.Read(ctx)
+		if err != nil {
+			log.Println("Lỗi đọc tin nhắn:", err)
+			return
+		}
 
-        var data map[string]interface{}
-        if err := json.Unmarshal(message, &data); err != nil {
-            log.Println("Lỗi giải mã JSON:", err)
-            continue
-        }
+		var data map[string]interface{}
+		if err := json.Unmarshal(message, &data); err != nil {
+			log.Println("Lỗi giải mã JSON:", err)
+			continue
+		}
 
-        if nextFundingTime, ok := data["T"]; ok {
-            nextFundingTimeInt := int64(nextFundingTime.(float64))
-            countdown := time.Until(time.Unix(nextFundingTimeInt/1000, 0))
-            msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Thời gian đến Funding Rate tiếp theo của %s: %v", symbol, countdown.Round(time.Second)))
-            bot.Send(msg)
-            return
-        }
-    }
+		if nextFundingTime, ok := data["T"]; ok {
+			nextFundingTimeMillis := int64(nextFundingTime.(float64))
+			remainingTime := time.Until(time.UnixMilli(nextFundingTimeMillis))
+			msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Funding rate countdown | %s |  %s", symbol, remainingTime))
+			bot.Send(msg)
+			return
+		}
+	}
 }

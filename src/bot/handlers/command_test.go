@@ -31,7 +31,7 @@ func TestHandleCommand(t *testing.T) {
 
 		// Capture output by simulating bot.Send method
 		t.Run(tt.command, func(t *testing.T) {
-			handleCommand(chatID, tt.command, bot, user)
+			handleCommand(chatID, tt.command, nil, bot, user)
 			// We are not actually sending the message via Telegram in the test,
 			// but we check that the appropriate command was processed correctly.
 		})
