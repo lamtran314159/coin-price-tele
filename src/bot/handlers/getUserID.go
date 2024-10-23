@@ -10,22 +10,24 @@ import (
     tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )   
 
-// Struct to send chatID to the backend
-type ChatIDPayload struct {
-    ChatID int64 `json:"chat_id"`
-    // threshold float64 `json:"threshold"`
-}
-type chatIDResponse struct {
-     ChatIDs []int64 `json:"chat_ids"`
-    // threshold float64 `json:"threshold"`
+type Payload struct {
+    Username string `json:"username"`
+    Name string `json:"name"`
+    Password string `json:"password"`
+    Email string `json:"email"`
+    VipRole int `json:"vip_role"`
+    IpList []string `json:"ip_list"`
+    ChatID int64 `json:"chatID"`
+    Symbol []string `json:"symbol"`
+    Threshold []float64 `json:"threshold"`
 }
 
 // Function to store chatID in the backend
 func StoreChatID(chatID int64) error {
-    url := "https://your-backend-api.com/store-chat-id" // Replace with your backend API URL
+    url := "http://103.205.60.174:8080/....." // Replace with your backend API URL
 
     // Create payload with chatID
-    payload := ChatIDPayload{
+    payload := Payload{
         ChatID: chatID,
     }
 
@@ -50,9 +52,22 @@ func StoreChatID(chatID int64) error {
     return nil
 }
 
+
+func NotifyUsers(bot *tgbotapi.BotAPI) {
+    chatIDs, err := GetChatIDs()
+    if err != nil {
+        log.Fatalf("Error retrieving chatIDs: %v", err)
+    }
+
+    for _, chatID := range chatIDs {
+        msg := tgbotapi.NewMessage(6989009560, chatID)
+        bot.Send(msg)
+    }
+}
+
 // Function to retrieve chatIDs from the backend
-func GetChatIDs() ([]int64, error) {
-    url := "http://localhost:3000/auth"  // Replace with your backend API URL
+func GetChatIDs() /*([]int64, error)*/  ([]string, error){
+    url := "http://103.205.60.174:8080/admin/getAllUser"  // Replace with your backend API URL
 
     // Send GET request to backend
     resp, err := http.Get(url)
@@ -72,23 +87,73 @@ func GetChatIDs() ([]int64, error) {
     }
 
     // Parse the JSON response
-    var chatIDResponse chatIDResponse
-    err = json.Unmarshal(body, &chatIDResponse)
+    var users []Payload
+    err = json.Unmarshal(body, &users)
     if err != nil {
         return nil, fmt.Errorf("error unmarshalling response: %v", err)
     }
 
-    return chatIDResponse.ChatIDs, nil
+    // var chatIDs [] int64
+    // for _, user := range users{
+    //     chatIDs = append(chatIDs, user.ChatID)
+    // }
+
+    var chatIDs []string
+    for _, user := range users{
+        chatIDs = append(chatIDs, user.Username)
+    }
+
+    return chatIDs, nil
 }
 
-func NotifyUsers(bot *tgbotapi.BotAPI) {
-    chatIDs, err := GetChatIDs()
+// Function to update chatID, symbol, and threshold in the backend
+func UpdateChatIDSymbolThreshold(chatID int64, symbol []string, threshold []float64) error {
+    url := "http://103.205.60.174:8080/....."
+
+    // Create payload with chatID, symbol, and threshold
+    payload := struct {
+        ChatID   int64     `json:"chatID"`
+        Symbol   []string  `json:"symbol"`
+        Threshold []float64 `json:"threshold"`
+    }{
+        ChatID:   chatID,
+        Symbol:   symbol,
+        Threshold: threshold,
+    }
+
+    // Convert payload to JSON
+    jsonPayload, err := json.Marshal(payload)
     if err != nil {
-        log.Fatalf("Error retrieving chatIDs: %v", err)
+        return fmt.Errorf("error marshalling payload: %v", err)
     }
 
-    for _, chatID := range chatIDs {
-        msg := tgbotapi.NewMessage(chatID, "Your price alert has been triggered!")
-        bot.Send(msg)
+    // Send PUT request to backend API
+    req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(jsonPayload))
+    if err != nil {
+        return fmt.Errorf("error creating request: %v", err)
     }
+    req.Header.Set("Content-Type", "application/json")
+
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        return fmt.Errorf("error sending request to backend: %v", err)
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        return fmt.Errorf("error response from backend: %s", resp.Status)
+    }
+
+    log.Printf("Updated chatID %d, symbol %v, and threshold %v successfully!", chatID, symbol, threshold)
+    return nil
 }
+
+// Key: Content-Type
+// Value: application/json
+// Body: raw JSON
+// {
+//     "coin": "BTC",
+//     "price": 65000,
+//     "timestamp": "2024-01-01T00:00:00Z"
+//   }

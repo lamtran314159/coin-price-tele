@@ -34,6 +34,19 @@ npm install
 npm run start:dev
 ```
 
+## Hướng dẫn local test webhook
+
+### Cài đặt ngrok bằng choco
+Tham khảo: https://ngrok.com/docs/getting-started/?os=windows
+Chú ý tải choco, chạy Powershell/Cmp bằng quyền admin
+
+
+### Local test
+Tạo URL ngrok bằng lệnh: ```ngrok http 8443```
+
+Copy đường dẫn tại Forwarding URL có dạng: https://ngrokurl.ngrok-free.app, thêm /webhook và copy vào WEBHOOK_URL của file .env
+
+Chạy bot bằng lệnh ```go run main.go```
 
 ## Liên hệ
 
