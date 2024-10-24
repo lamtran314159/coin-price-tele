@@ -165,6 +165,8 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 		symbol := args[0]
 		go GetFundingRateCountdown(chatID, symbol, bot)
 	}
+	// case "/spot-lower":
+
 }
 
 func sendMenu(chatID int64) tgbotapi.MessageConfig {
