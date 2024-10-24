@@ -2,7 +2,10 @@ package handlers
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -82,6 +85,35 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
+	case "/kline":
+		fmt.Println(args)
+
+		if len(args) < 2 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /kline <symbol> <interval> [limit]")
+			bot.Send(msg)
+			return
+		}
+
+		symbol := args[0]
+		interval := args[1]
+
+		// Set default limit if not provided
+		limit := 5 // Default value
+		if len(args) == 3 {
+			parsedLimit, err := strconv.Atoi(args[2])
+			if err == nil {
+				limit = parsedLimit
+			}
+		}
+
+		data, err := getKlineData(symbol, interval, limit) // Pass parameters as needed
+		if err != nil {
+			// If there's an error, send the error message back to the user
+			_, _ = bot.Send(tgbotapi.NewMessage(chatID, "Error fetching Kline data: "+err.Error()))
+		} else {
+			// If there's no error, send the Kline data
+			_, _ = bot.Send(tgbotapi.NewMessage(chatID, data))
+		}
 	case "/menu":
 		_, err := bot.Send(sendMenu(chatID))
 		if err != nil {
@@ -151,4 +183,30 @@ func sendScreamedMessage(message *tgbotapi.Message) tgbotapi.MessageConfig {
 func copyMessage(message *tgbotapi.Message) tgbotapi.MessageConfig {
 	msg := tgbotapi.NewMessage(message.Chat.ID, message.Text)
 	return msg
+}
+
+func getKlineData(symbol string, interval string, limit int) (string, error) {
+	// Define the API endpoint
+	apiURL := fmt.Sprintf("https://api.binance.com/api/v3/klines?symbol=%s&interval=%s&limit=%d", symbol, interval, limit)
+
+	// Make the GET request
+	resp, err := http.Get(apiURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to make request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Check if request was successful
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("request failed: %s", resp.Status)
+	}
+
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response: %v", err)
+	}
+
+	// Return the raw JSON response as a string
+	return string(body), nil
 }

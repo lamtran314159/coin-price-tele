@@ -1,12 +1,13 @@
 package main
 
 import (
-	"bufio"
-	"context"
+	// "bufio"
+	// "context"
 	"log"
-	"os"
+	// "os"
 	"telegram-bot/bot"
 	"telegram-bot/config"
+	"net/http"
 
 	"github.com/joho/godotenv"
 )
@@ -18,19 +19,32 @@ func main() {
 	}
 
 	botToken := config.GetEnv("BOT_TOKEN")
-	tgBot, err := bot.InitBot(botToken)
+	webhookURL := config.GetEnv("WEBHOOK_URL")
+	tgBot, err := bot.InitBot(botToken, webhookURL)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	// Create a cancellable context
-	ctx, cancel := context.WithCancel(context.Background())
+	// // Create a cancellable context
+	// ctx, cancel := context.WithCancel(context.Background())
 
-	// Start the bot to listen for updates
-	go bot.Start(ctx, tgBot)
+	// // Start the bot to listen for updates
+	// go bot.Start(ctx, tgBot)
 
-	// Stop the bot when user presses enter
-	log.Println("Bot is running. Press enter to stop.")
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
-	cancel()
+	// // Stop the bot when user presses enter
+	// log.Println("Bot is running. Press enter to stop.")
+	// bufio.NewReader(os.Stdin).ReadBytes('\n')
+	// cancel()
+
+	// Start an HTTP server to listen for incoming requests
+	port := config.GetEnv("PORT")
+	if port == "" {
+		port = "8080" // Default port if not set
+	}
+	//!Get chatID from backend
+	yourChatID := int64(123)
+	go bot.MonitorBTCPrice(tgBot, yourChatID, "BTCUSDT")
+	go http.ListenAndServe(":"+port, nil)
+	log.Printf("Bot is listening on port %s...\n",port)
+	bot.StartWebhook(tgBot)
 }

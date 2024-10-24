@@ -4,6 +4,10 @@ import (
 	"context"
 	"log"
 	"telegram-bot/bot/handlers"
+	"time"
+	"encoding/json"
+	"fmt"
+	"net/http"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -36,6 +40,10 @@ var commands = []tgbotapi.BotCommand{
 		Description: "Test to see if user is authenticated",
 	},
 	{
+		Command:     "kline",
+		Description: "<symbol> <interval> [limit] [startTime] [endTime]",
+	},
+
 		Command:     "price_spot",
 		Description: "Fetch the latest spot price of a cryptocurrency",
 	},
@@ -54,13 +62,21 @@ var commands = []tgbotapi.BotCommand{
 }
 
 // Initialize the bot with the token
-func InitBot(token string) (*tgbotapi.BotAPI, error) {
+func InitBot(token string, webhookURL string) (*tgbotapi.BotAPI, error) {
 	var err error
 	bot, err = tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return nil, err
 	}
 	bot.Debug = false // Set to true if you want to debug interactions
+	webhook, err := tgbotapi.NewWebhook(webhookURL)
+	if err != nil {
+		return nil, err
+	}
+	_, err = bot.Request(webhook)
+	if err != nil {
+		return nil, err
+	}
 	_, err = bot.Request(tgbotapi.NewSetMyCommands(commands...))
 	if err != nil {
 		log.Panic(err)
@@ -79,6 +95,19 @@ func Start(ctx context.Context, bot *tgbotapi.BotAPI) {
 
 	// Pass updates to handler
 	go receiveUpdates(ctx, updates)
+}
+
+//Start listening update from webhook
+func StartWebhook(bot *tgbotapi.BotAPI){
+	//Create the update channel using ListenForWebhook
+	updates := bot.ListenForWebhook("/webhook")
+	for update := range updates{
+		if update.Message != nil {
+			handlers.HandleMessage(update.Message, bot)
+		} else if update.CallbackQuery != nil {
+			handlers.HandleButton(update.CallbackQuery, bot)
+		}
+	}
 }
 
 // Receive updates and pass them to handlers

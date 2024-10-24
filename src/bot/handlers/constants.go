@@ -44,6 +44,7 @@ var commandList = []string{
 	"/whisper - Disable screaming mode",
 	"/menu - Show menu with buttons",
 	"/help - Show available commands",
+	"/kline - Fetches Kline data for a specific trading pair and interval",
 	"/p_spot - Get spot price of a symbol",
 	"/p_future - Get future price of a symbol",
 	"/fundRate - Get funding rate of a symbol",
