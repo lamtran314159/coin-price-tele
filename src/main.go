@@ -41,9 +41,9 @@ func main() {
 	if port == "" {
 		port = "8080" // Default port if not set
 	}
-	//!Get chatID from backend
-	yourChatID := int64(123)
-	go bot.MonitorBTCPrice(tgBot, yourChatID, "BTCUSDT")
+	go http.HandleFunc("/backend", bot.PriceUpdateHandler)
+
+	// go bot.MonitorBTCPrice(tgBot, yourChatID, "BTCUSDT")
 	go http.ListenAndServe(":"+port, nil)
 	log.Printf("Bot is listening on port %s...\n",port)
 	bot.StartWebhook(tgBot)

@@ -130,6 +130,8 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 			log.Println("Error sending message:", err)
 		}
 	}
+	// case "/spot-lower":
+
 }
 
 func sendMenu(chatID int64) tgbotapi.MessageConfig {
