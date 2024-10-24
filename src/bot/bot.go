@@ -47,6 +47,7 @@ var commands = []tgbotapi.BotCommand{
 		Command:     "kline",
 		Description: "<symbol> <interval> [limit] [startTime] [endTime]",
 	},
+	{
 		Command:     "price_spot",
 		Description: "Fetch the latest spot price of a cryptocurrency",
 	},
@@ -62,6 +63,7 @@ var commands = []tgbotapi.BotCommand{
 		Command:     "funding_rate_countdown",
 		Description: "Fetch the latest funding rate countdown of a cryptocurrency",
 	},
+}
 
 type CoinPriceUpdate struct {
 	Symbol   string    `json:"symbol"`
