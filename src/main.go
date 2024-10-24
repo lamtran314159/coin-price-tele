@@ -5,9 +5,9 @@ import (
 	// "context"
 	"log"
 	// "os"
+	"net/http"
 	"telegram-bot/bot"
 	"telegram-bot/config"
-	"net/http"
 
 	"github.com/joho/godotenv"
 )
@@ -45,6 +45,6 @@ func main() {
 
 	// go bot.MonitorBTCPrice(tgBot, yourChatID, "BTCUSDT")
 	go http.ListenAndServe(":"+port, nil)
-	log.Printf("Bot is listening on port %s...\n",port)
+	log.Printf("Bot is listening on port %s...\n", port)
 	bot.StartWebhook(tgBot)
 }
