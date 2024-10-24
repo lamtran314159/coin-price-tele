@@ -63,12 +63,29 @@ var commands = []tgbotapi.BotCommand{
 		Command:     "future_higher",
 		Description: "<symbol> <threshold>",
 	},
+  {
+    Command:     "price_spot",
+		Description: "Fetch the latest spot price of a cryptocurrency",
+	},
+	{
+		Command:     "price_future",
+		Description: "Fetch the latest futures price of a cryptocurrency",
+	},
+	{
+		Command:     "funding_rate",
+		Description: "Fetch the latest funding rate of a cryptocurrency",
+	},
+	{
+		Command:     "funding_rate_countdown",
+		Description: "Fetch the latest funding rate countdown of a cryptocurrency",
+	},
 }
 
 type CoinPriceUpdate struct {
 	Coin      string  `json:"coin"`
 	Price     float64 `json:"price"`
 	Timestamp string  `json:"timestamp"`
+
 }
 
 // Initialize the bot with the token
@@ -94,6 +111,8 @@ func InitBot(bottoken string, webhookURL string) (*tgbotapi.BotAPI, error) {
 	if err != nil {
 		log.Panic(err)
 	}
+	log.Printf("Start")
+	handlers.FetchandStartWebSocket()
 	return bot, nil
 }
 

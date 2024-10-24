@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
 	"telegram-bot/services"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -129,6 +130,40 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 		if err != nil {
 			log.Println("Error sending message:", err)
 		}
+
+	case "/price_spot":
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /price_spot <symbol>")
+			bot.Send(msg)
+			return
+		}
+		symbol := args[0]
+		go GetSpotPrice(chatID, symbol, bot)
+	case "/price_future":
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /price_future <symbol>")
+			bot.Send(msg)
+			return
+		}
+		symbol := args[0]
+		go GetFuturePrice(chatID, symbol, bot)
+	case "/funding_rate":
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /funding_rate <symbol>")
+			bot.Send(msg)
+			return
+		}
+		symbol := args[0]
+		go GetFundingRate(chatID, symbol, bot)
+	case "/funding_rate_countdown":
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /funding_rate_countdown <symbol>")
+			bot.Send(msg)
+			return
+		}
+
+		symbol := args[0]
+		go GetFundingRateCountdown(chatID, symbol, bot)
 	}
 	// case "/spot-lower":
 
