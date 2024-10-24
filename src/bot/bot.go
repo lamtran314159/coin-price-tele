@@ -4,10 +4,12 @@ import (
 	"context"
 	"log"
 	"telegram-bot/bot/handlers"
+
 	// "time"
 	"encoding/json"
 	"fmt"
 	"net/http"
+
 	// "sync"
 	// "bytes"
 
@@ -48,9 +50,9 @@ var commands = []tgbotapi.BotCommand{
 }
 
 type CoinPriceUpdate struct {
-    Coin      string  `json:"coin"`
-    Price     float64 `json:"price"`
-    Timestamp string  `json:"timestamp"`
+	Coin      string  `json:"coin"`
+	Price     float64 `json:"price"`
+	Timestamp string  `json:"timestamp"`
 }
 
 // Initialize the bot with the token
@@ -87,11 +89,11 @@ func Start(ctx context.Context, bot *tgbotapi.BotAPI) {
 	go receiveUpdates(ctx, updates)
 }
 
-//Start listening update from webhook
-func StartWebhook(bot *tgbotapi.BotAPI){
+// Start listening update from webhook
+func StartWebhook(bot *tgbotapi.BotAPI) {
 	//Create the update channel using ListenForWebhook
 	updates := bot.ListenForWebhook("/webhook")
-	for update := range updates{
+	for update := range updates {
 		if update.Message != nil {
 			handlers.HandleMessage(update.Message, bot)
 		} else if update.CallbackQuery != nil {
@@ -119,104 +121,39 @@ func receiveUpdates(ctx context.Context, updates tgbotapi.UpdatesChannel) {
 func PriceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	//? nhan lenh post -> gui cho user
 	//? print user
-    if r.Method != http.MethodPost {
-        http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-        return
-    }
-    var update CoinPriceUpdate
-    err := json.NewDecoder(r.Body).Decode(&update)
-    if err != nil {
-        http.Error(w, "Failed to decode JSON", http.StatusBadRequest)
-        return
-    }
-    defer r.Body.Close()
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+	var update CoinPriceUpdate
+	err := json.NewDecoder(r.Body).Decode(&update)
+	if err != nil {
+		http.Error(w, "Failed to decode JSON", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
 
-    // Process the received data
-    fmt.Printf("Received price update: Coin: %s, Price: %.2f, Timestamp: %s\n", update.Coin, update.Price, update.Timestamp)
+	// Process the received data
+	fmt.Printf("Received price update: Coin: %s, Price: %.2f, Timestamp: %s\n", update.Coin, update.Price, update.Timestamp)
 	// Sử dụng WaitGroup để quản lý các goroutine
 	go handlers.NotifyUsers(bot)
 
-    // Respond to the sender
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte("Price update received"))
+	// Respond to the sender
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Price update received"))
 }
 
-// func Handlebackend(){
+type DemoPayload struct {
+	TelegramUserID int64 `json:"telegram_user_id"`
+}
 
-
-
-// 	// Giả sử đây là danh sách các chatID đọc từ backend
-// 	// sendGetRequest()
-//     chatIDs := []int64{123456789, 987654321, 1122334455}
-
-//     // Nội dung tin nhắn
-//     message := "Hello from your Telegram bot!"
-
-//     // Sử dụng WaitGroup để quản lý các goroutine
-//     var wg sync.WaitGroup
-
-//     // Gửi tin nhắn cho từng chatID
-//     for _, chatID := range chatIDs {
-//         wg.Add(1) // Tăng số lượng công việc đang chờ
-//         go sendMessage(chatID, message, &wg) // Khởi chạy goroutine để gửi tin nhắn
-//     }
-
-//     // Đợi tất cả goroutine hoàn thành
-//     wg.Wait()
-
-//     fmt.Println("All messages sent!")
-// }
-// const (
-//     btcThreshold = 65000.0 // Set your threshold here
-//     checkInterval = 1 * time.Minute // Check every minute
-// )
-
-// // PriceResponse represents the response from the Binance API
-// type PriceResponse struct {
-//     Symbol string `json:"symbol"`
-//     Price  string `json:"price"`
-// }
-
-// // Function to fetch the current BTC price from Binance
-// func fetchBTCPrice(symbol string) (float64, error) {
-// 	//Symbol and threadhold set by user
-// 	log.Printf("https://api.binance.com/api/v3/ticker/price?symbol="+symbol)
-//     resp, err := http.Get("https://api.binance.com/api/v3/ticker/price?symbol="+symbol)
-//     if err != nil {
-//         return 0, err
-//     }
-//     defer resp.Body.Close()
-
-//     var priceResponse PriceResponse
-//     if err := json.NewDecoder(resp.Body).Decode(&priceResponse); err != nil {
-//         return 0, err
-//     }
-
-//     // Convert price to float64
-//     var price float64
-//     if _, err := fmt.Sscanf(priceResponse.Price, "%f", &price); err != nil {
-//         return 0, err
-//     }
-
-//     return price, nil
-// }
-
-// // Function to monitor BTC price
-// func MonitorBTCPrice(bot *tgbotapi.BotAPI, chatID int64, symbol string) {
-//     for {
-//         price, err := fetchBTCPrice(symbol)
-//         if err != nil {
-//             log.Println("Error fetching %s price:", symbol, err)
-//             continue
-//         }
-
-//         log.Printf("Current %s price: %.2f USDT", symbol, price)
-
-//         if price > btcThreshold {
-//             msg := tgbotapi.NewMessage(chatID, "🚨 Alert: price has exceeded 65,000 USDT! Current price: "+fmt.Sprintf("%.2f", price))
-//             bot.Send(msg)
-//         }
-
-//         time.Sleep(checkInterval)
-//     }
-// }
+// Function to response to /backend endpoint then send message to user
+func BackendHandler(w http.ResponseWriter, r *http.Request) {
+	var demoPayload DemoPayload
+	if err := json.NewDecoder(r.Body).Decode(&demoPayload); err != nil {
+		http.Error(w, "Failed to decode JSON", http.StatusBadRequest)
+		return
+	}
+	handlers.SendMessageToUser(bot, demoPayload.TelegramUserID, "Hello, World!")
+	w.WriteHeader(http.StatusOK)
+}
