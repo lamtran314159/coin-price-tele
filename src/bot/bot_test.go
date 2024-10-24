@@ -11,7 +11,7 @@ import (
 func TestInitBot(t *testing.T) {
 	// Test with invalid token
 	invalidToken := "invalid_token"
-	_, err := InitBot(invalidToken)
+	_, err := InitBot(invalidToken, "")
 	if err == nil {
 		t.Error("InitBot() with invalid token should return an error")
 	}
@@ -21,7 +21,7 @@ func TestInitBot(t *testing.T) {
 		log.Fatal("Error loading .env file")
 	}
 	validToken := os.Getenv("BOT_TOKEN")
-	bot, err := InitBot(validToken)
+	bot, err := InitBot(validToken, "")
 	if err != nil {
 		t.Errorf("InitBot() with valid token returned an error: %v", err)
 	}
