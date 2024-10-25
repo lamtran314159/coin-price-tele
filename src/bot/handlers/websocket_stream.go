@@ -72,10 +72,20 @@ func GetSpotPrice(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
 		return
 	}
 
+	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	for {
-		_, message, err := conn.Read(ctx)
+		// Use timeoutCtx in the Read operation
+		_, message, err := conn.Read(timeoutCtx)
 		if err != nil {
-			log.Println("Error read message:", err)
+			if websocket.CloseStatus(err) == websocket.StatusNormalClosure {
+				log.Println("WebSocket closed normally")
+			} else {
+				log.Println("Error read message:", err)
+				msg := tgbotapi.NewMessage(chatID, "Invalid symbol or no data received.")
+				bot.Send(msg)
+			}
 			return
 		}
 
@@ -109,10 +119,20 @@ func GetFuturePrice(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
 		return
 	}
 
+	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	for {
-		_, message, err := conn.Read(ctx)
+		// Use timeoutCtx in the Read operation
+		_, message, err := conn.Read(timeoutCtx)
 		if err != nil {
-			log.Println("Error read message:", err)
+			if websocket.CloseStatus(err) == websocket.StatusNormalClosure {
+				log.Println("WebSocket closed normally")
+			} else {
+				log.Println("Error read message:", err)
+				msg := tgbotapi.NewMessage(chatID, "Invalid symbol or no data received.")
+				bot.Send(msg)
+			}
 			return
 		}
 
@@ -146,10 +166,20 @@ func GetFundingRate(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
 		return
 	}
 
+	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	for {
-		_, message, err := conn.Read(ctx)
+		// Use timeoutCtx in the Read operation
+		_, message, err := conn.Read(timeoutCtx)
 		if err != nil {
-			log.Println("Error read message:", err)
+			if websocket.CloseStatus(err) == websocket.StatusNormalClosure {
+				log.Println("WebSocket closed normally")
+			} else {
+				log.Println("Error read message:", err)
+				msg := tgbotapi.NewMessage(chatID, "Invalid symbol or no data received.")
+				bot.Send(msg)
+			}
 			return
 		}
 
@@ -183,10 +213,20 @@ func GetFundingRateCountdown(chatID int64, symbol string, bot *tgbotapi.BotAPI) 
 		return
 	}
 
+	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	for {
-		_, message, err := conn.Read(ctx)
+		// Use timeoutCtx in the Read operation
+		_, message, err := conn.Read(timeoutCtx)
 		if err != nil {
-			log.Println("Error read message:", err)
+			if websocket.CloseStatus(err) == websocket.StatusNormalClosure {
+				log.Println("WebSocket closed normally")
+			} else {
+				log.Println("Error read message:", err)
+				msg := tgbotapi.NewMessage(chatID, "Invalid symbol or no data received.")
+				bot.Send(msg)
+			}
 			return
 		}
 
