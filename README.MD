@@ -14,7 +14,7 @@
 | 2   | Nguyễn Trung Tín      | Developer     | 2213500         | [Github](https://github.com/TinnieTheCat198)       |
 | 3   | Thái Thành Duy        | Developer     | 2210535         | [Github](https://github.com/ShaKk0722)             |
 | 4   | Nguyễn Đăng Khoa      | Developer     | 2211621         | [Github](https://github.com/NguyenDangKhoaDepTrai) |
-| 5   | Lê Thành Đạt          | Developer     | 2210683         | [Github](https://github.com/thanhlam2000)          |
+| 5   | Lê Thành Đạt          | Developer     | 2210683         | [Github](https://github.com/Skehjhj)               |
 | 6   | Nguyễn Hữu Đăng Khoa  | Developer     | 2211625         | [Github](https://github.com/thanhlam2000)          |
 | 7   | Dương Hoàng Long      | Developer     | 2211873         | [Github](https://github.com/Long-noop)             |
 
@@ -34,6 +34,20 @@ Tải xuống các package: `go mod tidy`
 npm install
 npm run start:dev
 ```
+
+## Hướng dẫn local test webhook
+
+### Cài đặt ngrok bằng choco
+Tham khảo: https://ngrok.com/docs/getting-started/?os=windows
+Chú ý tải choco, chạy Powershell/Cmp bằng quyền admin
+
+
+### Local test
+Tạo URL ngrok bằng lệnh: ```ngrok http 8443```
+
+Copy đường dẫn tại Forwarding URL có dạng: https://ngrokurl.ngrok-free.app, thêm /webhook và copy vào WEBHOOK_URL của file .env
+
+Chạy bot bằng lệnh ```go run main.go```
 
 ## Liên hệ
 

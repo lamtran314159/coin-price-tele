@@ -45,4 +45,8 @@ var commandList = []string{
 	"/menu - Show menu with buttons",
 	"/help - Show available commands",
 	"/kline <symbol> <interval> [limit] [startTime] [endTime] - Get Kline data for a symbol",
+	"/p_spot - Get spot price of a symbol",
+	"/p_future - Get future price of a symbol",
+	"/fundRate - Get funding rate of a symbol",
+	"/fundRateCDown - Get funding time of a symbol",
 }
