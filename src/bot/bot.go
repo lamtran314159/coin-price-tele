@@ -4,10 +4,14 @@ import (
 	"context"
 	"log"
 	"telegram-bot/bot/handlers"
-	"time"
+
+	// "time"
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	// "sync"
+	// "bytes"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -43,61 +47,32 @@ var commands = []tgbotapi.BotCommand{
 		Command:     "kline",
 		Description: "<symbol> <interval> [limit] [startTime] [endTime]",
 	},
+	{
+		Command:     "price_spot",
+		Description: "Fetch the latest spot price of a cryptocurrency",
+	},
+	{
+		Command:     "price_future",
+		Description: "Fetch the latest futures price of a cryptocurrency",
+	},
+	{
+		Command:     "funding_rate",
+		Description: "Fetch the latest funding rate of a cryptocurrency",
+	},
+	{
+		Command:     "funding_rate_countdown",
+		Description: "Fetch the latest funding rate countdown of a cryptocurrency",
+	},
 }
 
-const (
-    btcThreshold = 65000.0 // Set your threshold here
-    checkInterval = 1 * time.Minute // Check every minute
-)
-
-// PriceResponse represents the response from the Binance API
-type PriceResponse struct {
-    Symbol string `json:"symbol"`
-    Price  string `json:"price"`
-}
-
-// Function to fetch the current BTC price from Binance
-func fetchBTCPrice(symbol string) (float64, error) {
-	//Symbol and threadhold set by user
-	log.Printf("https://api.binance.com/api/v3/ticker/price?symbol="+symbol)
-    resp, err := http.Get("https://api.binance.com/api/v3/ticker/price?symbol="+symbol)
-    if err != nil {
-        return 0, err
-    }
-    defer resp.Body.Close()
-
-    var priceResponse PriceResponse
-    if err := json.NewDecoder(resp.Body).Decode(&priceResponse); err != nil {
-        return 0, err
-    }
-
-    // Convert price to float64
-    var price float64
-    if _, err := fmt.Sscanf(priceResponse.Price, "%f", &price); err != nil {
-        return 0, err
-    }
-
-    return price, nil
-}
-
-// Function to monitor BTC price
-func MonitorBTCPrice(bot *tgbotapi.BotAPI, chatID int64, symbol string) {
-    for {
-        price, err := fetchBTCPrice(symbol)
-        if err != nil {
-            log.Println("Error fetching %s price:", symbol, err)
-            continue
-        }
-
-        log.Printf("Current %s price: %.2f USDT", symbol, price)
-
-        if price > btcThreshold {
-            msg := tgbotapi.NewMessage(chatID, "🚨 Alert: price has exceeded 65,000 USDT! Current price: "+fmt.Sprintf("%.2f", price))
-            bot.Send(msg)
-        }
-
-        time.Sleep(checkInterval)
-    }
+type CoinPriceUpdate struct {
+	Symbol    string  `json:"symbol"`
+	Price     float64 `json:"price"`
+	Threshold float64 `json:"threshold"`
+	Lower     bool    `json:"lower"`
+	VipRole   int     `json:"vip_role"`
+	ChatID    int64   `json:"chatID"`
+	Timestamp string  `json:"timestamp"`
 }
 
 // Initialize the bot with the token
@@ -120,6 +95,8 @@ func InitBot(token string, webhookURL string) (*tgbotapi.BotAPI, error) {
 	if err != nil {
 		log.Panic(err)
 	}
+	log.Printf("Start")
+	handlers.FetchandStartWebSocket()
 	return bot, nil
 }
 
@@ -134,11 +111,11 @@ func Start(ctx context.Context, bot *tgbotapi.BotAPI) {
 	go receiveUpdates(ctx, updates)
 }
 
-//Start listening update from webhook
-func StartWebhook(bot *tgbotapi.BotAPI){
+// Start listening update from webhook
+func StartWebhook(bot *tgbotapi.BotAPI) {
 	//Create the update channel using ListenForWebhook
 	updates := bot.ListenForWebhook("/webhook")
-	for update := range updates{
+	for update := range updates {
 		if update.Message != nil {
 			handlers.HandleMessage(update.Message, bot)
 		} else if update.CallbackQuery != nil {
@@ -162,3 +139,43 @@ func receiveUpdates(ctx context.Context, updates tgbotapi.UpdatesChannel) {
 		}
 	}
 }
+
+func PriceUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	//? nhan lenh post -> gui cho user
+	//? print user
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+	var update CoinPriceUpdate
+	err := json.NewDecoder(r.Body).Decode(&update)
+	if err != nil {
+		http.Error(w, "Failed to decode JSON", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	// Process the received data
+	fmt.Printf("Received price update: Coin: %s, Price: %.2f, Timestamp: %s\n", update.Symbol, update.Threshold, update.Timestamp)
+	// Sử dụng WaitGroup để quản lý các goroutine
+	direction := "below"
+	if !update.Lower {
+		direction = "above"
+	}
+	mess := fmt.Sprintf("Price alert: Coin: %s is %s threshold: %.2f\n Current price: %.2f", update.Symbol, direction, update.Threshold, update.Price)
+	go handlers.SendMessageToUser(bot, update.ChatID, mess)
+
+	// Respond to the sender
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Price update received"))
+}
+
+//	demo payload {
+// 	"symbol": "BTC",
+// 	"price": 65000,
+// 	"threshold": 60000,
+// 	"lower": false,
+// 	"vip_role": 1,
+// 	"chatID": 6989009560,
+// 	"timestamp": "2024-01-01T00:00:00Z"
+// }
