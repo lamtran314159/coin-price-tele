@@ -83,7 +83,7 @@ func GetSpotPrice(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
 				log.Println("WebSocket closed normally")
 			} else {
 				log.Println("Error read message:", err)
-				msg := tgbotapi.NewMessage(chatID, "Invalid symbol or no data received.")
+				msg := tgbotapi.NewMessage(chatID, "Invalid symbol. Please provide a valid symbol")
 				bot.Send(msg)
 			}
 			return
@@ -130,7 +130,7 @@ func GetFuturePrice(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
 				log.Println("WebSocket closed normally")
 			} else {
 				log.Println("Error read message:", err)
-				msg := tgbotapi.NewMessage(chatID, "Invalid symbol or no data received.")
+				msg := tgbotapi.NewMessage(chatID, "Invalid symbol. Please provide a valid symbol")
 				bot.Send(msg)
 			}
 			return
@@ -177,7 +177,7 @@ func GetFundingRate(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
 				log.Println("WebSocket closed normally")
 			} else {
 				log.Println("Error read message:", err)
-				msg := tgbotapi.NewMessage(chatID, "Invalid symbol or no data received.")
+				msg := tgbotapi.NewMessage(chatID, "Invalid symbol. Please provide a valid symbol")
 				bot.Send(msg)
 			}
 			return
@@ -224,7 +224,7 @@ func GetFundingRateCountdown(chatID int64, symbol string, bot *tgbotapi.BotAPI) 
 				log.Println("WebSocket closed normally")
 			} else {
 				log.Println("Error read message:", err)
-				msg := tgbotapi.NewMessage(chatID, "Invalid symbol or no data received.")
+				msg := tgbotapi.NewMessage(chatID, "Invalid symbol. Please provide a valid symbol")
 				bot.Send(msg)
 			}
 			return
