@@ -49,19 +49,19 @@ var commands = []tgbotapi.BotCommand{
 	},
 	{
 		Command:     "price_spot",
-		Description: "Fetch the latest spot price of a cryptocurrency",
+		Description: "<symbol>",
 	},
 	{
 		Command:     "price_future",
-		Description: "Fetch the latest futures price of a cryptocurrency",
+		Description: "<symbol>",
 	},
 	{
 		Command:     "funding_rate",
-		Description: "Fetch the latest funding rate of a cryptocurrency",
+		Description: "<symbol>",
 	},
 	{
 		Command:     "funding_rate_countdown",
-		Description: "Fetch the latest funding rate countdown of a cryptocurrency",
+		Description: "<symbol>",
 	},
 }
 
@@ -96,7 +96,6 @@ func InitBot(token string, webhookURL string) (*tgbotapi.BotAPI, error) {
 		log.Panic(err)
 	}
 	log.Printf("Start")
-	handlers.FetchandStartWebSocket()
 	return bot, nil
 }
 
