@@ -49,19 +49,19 @@ var commands = []tgbotapi.BotCommand{
 	},
 	{
 		Command:     "price_spot",
-		Description: "Fetch the latest spot price of a cryptocurrency",
+		Description: "<symbol>",
 	},
 	{
 		Command:     "price_future",
-		Description: "Fetch the latest futures price of a cryptocurrency",
+		Description: "<symbol>",
 	},
 	{
 		Command:     "funding_rate",
-		Description: "Fetch the latest funding rate of a cryptocurrency",
+		Description: "<symbol>",
 	},
 	{
 		Command:     "funding_rate_countdown",
-		Description: "Fetch the latest funding rate countdown of a cryptocurrency",
+		Description: "<symbol>",
 	},
 }
 type Price struct{
@@ -80,20 +80,6 @@ type CoinPriceUpdate struct {
 	Timestamp string `json:"timestamp"`
 	Triggertype string `json:"triggerType"` //spot, price-difference, funding-rate, future
 }
-
-// {
-// 	"symbol": "BTC",
-// 	"price": {
-// 		"spot_price": 65000
-//		"future_price": 64000
-//		"price_diff": 1000
-// 	},
-// 	"threshold": 60000,
-//	"condition" : ">="
-// 	"chatID": "6989009560",
-// 	"timestamp": "2024-01-01T00:00:00Z",
-// 	"triggerType": "price-difference"
-// }
 
 // Initialize the bot with the token
 func InitBot(token string, webhookURL string) (*tgbotapi.BotAPI, error) {
@@ -116,7 +102,6 @@ func InitBot(token string, webhookURL string) (*tgbotapi.BotAPI, error) {
 		log.Panic(err)
 	}
 	log.Printf("Start")
-	handlers.FetchandStartWebSocket()
 	return bot, nil
 }
 
@@ -203,12 +188,16 @@ func PriceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Price update received"))
 }
 
-//	demo payload {
+// demo payload{
 // 	"symbol": "BTC",
-// 	"price": 65000,
+// 	"price": {
+// 		"spot_price": 65000
+//		"future_price": 64000
+//		"price_diff": 1000
+// 	},
 // 	"threshold": 60000,
-// 	"lower": false,
-// 	"vip_role": 1,
-// 	"chatID": 6989009560,
-// 	"timestamp": "2024-01-01T00:00:00Z"
+//	"condition" : ">="
+// 	"chatID": "6989009560",
+// 	"timestamp": "2024-01-01T00:00:00Z",
+// 	"triggerType": "price-difference"
 // }
