@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	// "sync"
 	// "bytes"
@@ -49,30 +50,34 @@ var commands = []tgbotapi.BotCommand{
 	},
 	{
 		Command:     "price_spot",
-		Description: "Fetch the latest spot price of a cryptocurrency",
+		Description: "<symbol>",
 	},
 	{
 		Command:     "price_future",
-		Description: "Fetch the latest futures price of a cryptocurrency",
+		Description: "<symbol>",
 	},
 	{
 		Command:     "funding_rate",
-		Description: "Fetch the latest funding rate of a cryptocurrency",
+		Description: "<symbol>",
 	},
 	{
 		Command:     "funding_rate_countdown",
-		Description: "Fetch the latest funding rate countdown of a cryptocurrency",
+		Description: "<symbol>",
 	},
 }
 
+// send from BE
 type CoinPriceUpdate struct {
-	Symbol    string  `json:"symbol"`
-	Price     float64 `json:"price"`
-	Threshold float64 `json:"threshold"`
-	Lower     bool    `json:"lower"`
-	VipRole   int     `json:"vip_role"`
-	ChatID    int64   `json:"chatID"`
-	Timestamp string  `json:"timestamp"`
+	Symbol      string  `json:"symbol"`
+	Spotprice   float64 `json:"spot_price"`
+	Futureprice float64 `json:"future_price"`
+	Pricediff   float64 `json:"price_diff"`
+	Fundingrate float64 `json:"fundingrate"`
+	Threshold   float64 `json:"threshold"`
+	Condition   string  `json:"condition"`
+	ChatID      string  `json:"chatID"`
+	Timestamp   string  `json:"timestamp"`
+	Triggertype string  `json:"triggerType"` //spot, price-difference, funding-rate, future
 }
 
 // Initialize the bot with the token
@@ -96,7 +101,6 @@ func InitBot(token string, webhookURL string) (*tgbotapi.BotAPI, error) {
 		log.Panic(err)
 	}
 	log.Printf("Start")
-	handlers.FetchandStartWebSocket()
 	return bot, nil
 }
 
@@ -159,23 +163,37 @@ func PriceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Received price update: Coin: %s, Price: %.2f, Timestamp: %s\n", update.Symbol, update.Threshold, update.Timestamp)
 	// Sử dụng WaitGroup để quản lý các goroutine
 	direction := "below"
-	if !update.Lower {
+	if update.Condition == ">=" || update.Condition == ">" {
 		direction = "above"
 	}
-	mess := fmt.Sprintf("Price alert: Coin: %s is %s threshold: %.2f\n Current price: %.2f", update.Symbol, direction, update.Threshold, update.Price)
-	go handlers.SendMessageToUser(bot, update.ChatID, mess)
+	chatID, err := strconv.ParseInt(update.ChatID, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid chat ID", http.StatusBadRequest)
+		return
+	}
+	var mess string
+	if update.Triggertype == "spot" {
+		mess = fmt.Sprintf("Price alert: Coin: %s is %s threshold: %.2f\n Current spot price: %.2f\n Trigger Type: %s",
+			update.Symbol, direction, update.Threshold, update.Spotprice, update.Triggertype)
+	}
+	if update.Triggertype == "price-difference" {
+		mess = fmt.Sprintf("Price alert: Coin: %s is %s Price-diff: %.2f\n Current spot price: %.2f, Current future price: %.2f\n Trigger Type: %s",
+			update.Symbol, direction, update.Pricediff, update.Spotprice, update.Futureprice, update.Triggertype)
+	}
+	go handlers.SendMessageToUser(bot, chatID, mess)
 
 	// Respond to the sender
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Price update received"))
 }
 
-//	demo payload {
-// 	"symbol": "BTC",
-// 	"price": 65000,
-// 	"threshold": 60000,
-// 	"lower": false,
-// 	"vip_role": 1,
-// 	"chatID": 6989009560,
-// 	"timestamp": "2024-01-01T00:00:00Z"
+// demo payload{
+//     "symbol": "BTC",
+//     "spot_price": 65000,
+//     "future_price": 64000,
+//     "threshold": 60000,
+//     "condition" : ">="
+//     "chatID": "6989009560",
+//     "timestamp": "2024-01-01T00:00:00Z",
+//     "triggerType": "price-difference"
 // }

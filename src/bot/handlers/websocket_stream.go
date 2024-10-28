@@ -61,14 +61,14 @@ func GetSpotPrice(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
 	// Create a background context for WebSocket connection
 	ctx := context.Background()
 	if err := connectWebSocket(BinanceSpotWSURL); err != nil {
-		log.Println("Error connect WebSocket:", err)
+		log.Println("Failed to connect to WebSocket:", err)
 		return
 	}
-	defer conn.Close(websocket.StatusNormalClosure, "closing")
+	defer conn.Close(websocket.StatusNormalClosure, "Connection closed")
 
 	stream := strings.ToLower(symbol) + "@ticker"
 	if err := subscribeToStream(stream); err != nil {
-		log.Println("Error subscribe stream:", err)
+		log.Println("Failed to subscribe to stream:", err)
 		return
 	}
 
@@ -82,8 +82,8 @@ func GetSpotPrice(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
 			if websocket.CloseStatus(err) == websocket.StatusNormalClosure {
 				log.Println("WebSocket closed normally")
 			} else {
-				log.Println("Error read message:", err)
-				msg := tgbotapi.NewMessage(chatID, "Invalid symbol. Please provide a valid symbol")
+				log.Println("Error reading message:", err)
+				msg := tgbotapi.NewMessage(chatID, "Invalid symbol. Please provide a valid symbol.")
 				bot.Send(msg)
 			}
 			return
@@ -91,7 +91,7 @@ func GetSpotPrice(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
 
 		var data map[string]interface{}
 		if err := json.Unmarshal(message, &data); err != nil {
-			log.Println("Error unmarshal json:", err)
+			log.Println("Failed to unmarshal JSON:", err)
 			continue
 		}
 
@@ -108,14 +108,14 @@ func GetFuturePrice(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
 	// Create a background context for WebSocket connection
 	ctx := context.Background()
 	if err := connectWebSocket(BinanceFutureWSURL); err != nil {
-		log.Println("Error connect WebSocket:", err)
+		log.Println("Failed to connect to WebSocket:", err)
 		return
 	}
-	defer conn.Close(websocket.StatusNormalClosure, "closing")
+	defer conn.Close(websocket.StatusNormalClosure, "Connection closed")
 
 	stream := strings.ToLower(symbol) + "@markPrice"
 	if err := subscribeToStream(stream); err != nil {
-		log.Println("Error subscribe stream:", err)
+		log.Println("Failed to subscribe to stream:", err)
 		return
 	}
 
@@ -129,7 +129,7 @@ func GetFuturePrice(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
 			if websocket.CloseStatus(err) == websocket.StatusNormalClosure {
 				log.Println("WebSocket closed normally")
 			} else {
-				log.Println("Error read message:", err)
+				log.Println("Error reading message:", err)
 				msg := tgbotapi.NewMessage(chatID, "Invalid symbol. Please provide a valid symbol")
 				bot.Send(msg)
 			}
@@ -138,7 +138,7 @@ func GetFuturePrice(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
 
 		var data map[string]interface{}
 		if err := json.Unmarshal(message, &data); err != nil {
-			log.Println("Error unmarshal json:", err)
+			log.Println("Failed to unmarshal JSON:", err)
 			continue
 		}
 
@@ -155,14 +155,14 @@ func GetFundingRate(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
 	// Create a background context for WebSocket connection
 	ctx := context.Background()
 	if err := connectWebSocket(BinanceFutureWSURL); err != nil {
-		log.Println("Error connect WebSocket:", err)
+		log.Println("Failed to connect to WebSocket:", err)
 		return
 	}
-	defer conn.Close(websocket.StatusNormalClosure, "closing")
+	defer conn.Close(websocket.StatusNormalClosure, "Connection closed")
 
 	stream := strings.ToLower(symbol) + "@markPrice"
 	if err := subscribeToStream(stream); err != nil {
-		log.Println("Error subscribe stream:", err)
+		log.Println("Failed to subscribe to stream:", err)
 		return
 	}
 
@@ -176,7 +176,7 @@ func GetFundingRate(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
 			if websocket.CloseStatus(err) == websocket.StatusNormalClosure {
 				log.Println("WebSocket closed normally")
 			} else {
-				log.Println("Error read message:", err)
+				log.Println("Error reading message:", err)
 				msg := tgbotapi.NewMessage(chatID, "Invalid symbol. Please provide a valid symbol")
 				bot.Send(msg)
 			}
@@ -185,7 +185,7 @@ func GetFundingRate(chatID int64, symbol string, bot *tgbotapi.BotAPI) {
 
 		var data map[string]interface{}
 		if err := json.Unmarshal(message, &data); err != nil {
-			log.Println("Error unmarshal json:", err)
+			log.Println("Failed to unmarshal JSON:", err)
 			continue
 		}
 
@@ -202,14 +202,14 @@ func GetFundingRateCountdown(chatID int64, symbol string, bot *tgbotapi.BotAPI) 
 	// Create a background context for WebSocket connection
 	ctx := context.Background()
 	if err := connectWebSocket(BinanceFutureWSURL); err != nil {
-		log.Println("Error connect WebSocket:", err)
+		log.Println("Failed to connect to WebSocket:", err)
 		return
 	}
 	defer conn.Close(websocket.StatusNormalClosure, "closing")
 
 	stream := strings.ToLower(symbol) + "@markPrice"
 	if err := subscribeToStream(stream); err != nil {
-		log.Println("Error subscribe stream:", err)
+		log.Println("Failed to subscribe to stream:", err)
 		return
 	}
 
@@ -223,7 +223,7 @@ func GetFundingRateCountdown(chatID int64, symbol string, bot *tgbotapi.BotAPI) 
 			if websocket.CloseStatus(err) == websocket.StatusNormalClosure {
 				log.Println("WebSocket closed normally")
 			} else {
-				log.Println("Error read message:", err)
+				log.Println("Error reading message:", err)
 				msg := tgbotapi.NewMessage(chatID, "Invalid symbol. Please provide a valid symbol")
 				bot.Send(msg)
 			}
@@ -232,7 +232,7 @@ func GetFundingRateCountdown(chatID int64, symbol string, bot *tgbotapi.BotAPI) 
 
 		var data map[string]interface{}
 		if err := json.Unmarshal(message, &data); err != nil {
-			log.Println("Error unmarshal json:", err)
+			log.Println("Failed to unmarshal JSON:", err)
 			continue
 		}
 

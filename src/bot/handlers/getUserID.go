@@ -23,6 +23,14 @@ type Payload struct {
 	Threshold []float64 `json:"threshold"`
 }
 
+//!send to BE
+type CoinPriceUpdate struct {
+	Symbol   string    `json:"symbol"`
+	Price float64  `json:"threshold"`
+	Condition string `json:"condition"` // >= price, <=, >, < 
+	Triggertype string `json:"triggerType"`
+}
+
 // Function to store chatID in the backend
 func StoreChatID(chatID int64) error {
 	url := "http://103.205.60.174:8080/....."
