@@ -64,16 +64,14 @@ var commands = []tgbotapi.BotCommand{
 		Description: "<symbol>",
 	},
 }
-type Price struct{
-	Spotprice float64 `json:"spot_price"`
-	Fututeprice float64 `json:"future_price"`
-	Pricediff float64 `json:"price_diff"`
-	Fundingrate float64 `json:"fundingrate"`
-}
+	
 //send from BE
 type CoinPriceUpdate struct {
 	Symbol   string    `json:"symbol"`
-	Price 	Price	`json:"price"`
+	Spotprice float64 	`json:"spot_price"`
+	Futureprice float64 `json:"future_price"`
+	Pricediff float64 `json:"price_diff"`
+	Fundingrate float64 `json:"fundingrate"`
 	Threshold float64  `json:"threshold"`
 	Condition string `json:"condition"`
 	ChatID   string   `json:"chatID"`
@@ -175,11 +173,11 @@ func PriceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	var mess string
 	if update.Triggertype == "spot" {
 		mess = fmt.Sprintf("Price alert: Coin: %s is %s threshold: %.2f\n Current spot price: %.2f\n Trigger Type: %s",
-							update.Symbol, direction, update.Threshold, update.Price.Spotprice, update.Triggertype)
+							update.Symbol, direction, update.Threshold, update.Spotprice, update.Triggertype)
 	}
 	if update.Triggertype == "price-difference" {
 		mess = fmt.Sprintf("Price alert: Coin: %s is %s Price-diff: %.2f\n Current spot price: %.2f, Current future price: %.2f\n Trigger Type: %s",
-							update.Symbol, direction, update.Price.Pricediff, update.Price.Spotprice, update.Price.Fututeprice, update.Triggertype)
+							update.Symbol, direction, update.Pricediff, update.Spotprice, update.Futureprice, update.Triggertype)
 	}
 	go handlers.SendMessageToUser(bot, chatID, mess)
 
@@ -189,15 +187,12 @@ func PriceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // demo payload{
-// 	"symbol": "BTC",
-// 	"price": {
-// 		"spot_price": 65000
-//		"future_price": 64000
-//		"price_diff": 1000
-// 	},
-// 	"threshold": 60000,
-//	"condition" : ">="
-// 	"chatID": "6989009560",
-// 	"timestamp": "2024-01-01T00:00:00Z",
-// 	"triggerType": "price-difference"
+//     "symbol": "BTC",
+//     "spot_price": 65000,
+//     "future_price": 64000,
+//     "threshold": 60000,
+//     "condition" : ">="
+//     "chatID": "6989009560",
+//     "timestamp": "2024-01-01T00:00:00Z",
+//     "triggerType": "price-difference"
 // }
