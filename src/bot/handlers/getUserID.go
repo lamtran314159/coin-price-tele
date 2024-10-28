@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -23,33 +24,52 @@ type Payload struct {
 	Threshold []float64 `json:"threshold"`
 }
 
+var storedChatIDs = make(map[int64]bool)
+
 // Function to store chatID in the backend
-func StoreChatID(chatID int64) error {
-	url := "http://103.205.60.174:8080/....."
+func StoreChatID(ID int64) error {
+	if storedChatIDs[ID] {
+		fmt.Printf("ChatID %d already stored!\n", ID)
+		return nil
+	}
+	storedChatIDs[ID] = true
+
+	url := "https://1662-116-110-41-111.ngrok-free.app/backend" // Replace with your backend API URL
 
 	// Create payload with chatID
 	payload := Payload{
-		ChatID: chatID,
+		ChatID: ID,
 	}
 
 	// Convert payload to JSON
 	jsonPayload, err := json.Marshal(payload)
+
 	if err != nil {
 		return fmt.Errorf("error marshalling chatID payload: %v", err)
 	}
 
-	// Send POST request to backend API
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonPayload))
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonPayload))
+
 	if err != nil {
 		return fmt.Errorf("error sending request to backend: %v", err)
 	}
 	defer resp.Body.Close()
 
+	// Check the response status code
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("error response from backend: %s", resp.Status)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Printf("error reading response body: %v", err)
+			return fmt.Errorf("error reading response body: %v", err)
+		}
+		fmt.Printf("backend returned non-OK status: %d, body: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("backend returned non-OK status: %d, body: %s", resp.StatusCode, string(body))
 	}
-
-	log.Printf("Stored chatID %d successfully!", chatID)
+	fmt.Printf("Stored chatID %d successfully!\n", ID)
 	return nil
 }
 

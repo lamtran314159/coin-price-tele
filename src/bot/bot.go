@@ -63,6 +63,18 @@ var commands = []tgbotapi.BotCommand{
 		Command:     "funding_rate_countdown",
 		Description: "<symbol>",
 	},
+	{
+		Command:     "alert_price_with_threshold",
+		Description: "<spot/future> <lower/above> <symbol> <threshold>",
+	},
+	{
+		Command:     "price_differece",
+		Description: "<threshold>",
+	},
+	{
+		Command:    "funding_rate_change",
+		Description: "<threshold>",
+	},
 }
 
 type CoinPriceUpdate struct {
@@ -74,6 +86,17 @@ type CoinPriceUpdate struct {
 	ChatID    int64   `json:"chatID"`
 	Timestamp string  `json:"timestamp"`
 }
+
+//	demo payload
+//{
+// 	"symbol": "BTC",
+// 	"price": 65000,
+// 	"threshold": 60000,
+// 	"lower": false,
+// 	"vip_role": 1,
+// 	"chatID": 6989009560,
+// 	"timestamp": "2024-01-01T00:00:00Z"
+// }
 
 // Initialize the bot with the token
 func InitBot(token string, webhookURL string) (*tgbotapi.BotAPI, error) {
@@ -168,13 +191,3 @@ func PriceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Price update received"))
 }
-
-//	demo payload {
-// 	"symbol": "BTC",
-// 	"price": 65000,
-// 	"threshold": 60000,
-// 	"lower": false,
-// 	"vip_role": 1,
-// 	"chatID": 6989009560,
-// 	"timestamp": "2024-01-01T00:00:00Z"
-// }
