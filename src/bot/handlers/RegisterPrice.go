@@ -45,7 +45,7 @@ func RegisterPriceThreshold(ID int64, symbol string, threshold float64, is_lower
 	req.Header.Add("Accept", "*/*")
 
 	//token có thể thay đổi
-	req.Header.Add("Cookie", "token=eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJNSyIsInN1YiI6InRyYW5odXkiLCJwYXNzd29yZCI6ImFpIGNobyBjb2kgbeG6rXQga2jhuql1IiwiZXhwIjoxNzMwMTI3ODY3fQ.B789JAJGsWsFLA-DGMaZuep2NpQkUhoH0n8eIo0qey0")
+	req.Header.Add("Cookie", "token=eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJNSyIsInN1YiI6InRyYW5odXkiLCJwYXNzd29yZCI6ImFpIGNobyBjb2kgbeG6rXQga2jhuql1IiwiZXhwIjoxNzMwMTM0NjQwfQ.RjBntuONio_O7ZwMq5zGDgDXMbX7I0v_lGBM94Cb2Zs")
 
 	res, err := client.Do(req)
 	if err != nil {
