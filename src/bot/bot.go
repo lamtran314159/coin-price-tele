@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+
 	// "sync"
 	// "bytes"
 
@@ -63,20 +64,34 @@ var commands = []tgbotapi.BotCommand{
 		Command:     "funding_rate_countdown",
 		Description: "<symbol>",
 	},
+	{
+		Command:     "alert_price_with_threshold",
+		Description: "<spot/future> <lower/above> <symbol> <threshold>",
+	},
+	{
+		Command:     "price_differece",
+		Description: "<threshold>",
+	},
+	{
+		Command:     "funding_rate_change",
+		Description: "<threshold>",
+	},
 }
-	
-//send from BE
+
+
+// send from BE
 type CoinPriceUpdate struct {
-	Symbol   string    `json:"symbol"`
-	Spotprice float64 	`json:"spot_price"`
+	Symbol      string  `json:"symbol"`
+	Spotprice   float64 `json:"spot_price"`
 	Futureprice float64 `json:"future_price"`
-	Pricediff float64 `json:"price_diff"`
+	Pricediff   float64 `json:"price_diff"`
 	Fundingrate float64 `json:"fundingrate"`
-	Threshold float64  `json:"threshold"`
-	Condition string `json:"condition"`
-	ChatID   string   `json:"chatID"`
-	Timestamp string `json:"timestamp"`
-	Triggertype string `json:"triggerType"` //spot, price-difference, funding-rate, future
+	Threshold   float64 `json:"threshold"`
+	Condition   string  `json:"condition"`
+	ChatID      string  `json:"chatID"`
+	Timestamp   string  `json:"timestamp"`
+	Triggertype string  `json:"triggerType"` //spot, price-difference, funding-rate, future
+
 }
 
 // Initialize the bot with the token
@@ -162,6 +177,7 @@ func PriceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Received price update: Coin: %s, Price: %.2f, Timestamp: %s\n", update.Symbol, update.Threshold, update.Timestamp)
 	// Sử dụng WaitGroup để quản lý các goroutine
 	direction := "below"
+
 	if (update.Condition == ">=" || update.Condition == ">") {
 		direction = "above"
 	}
@@ -173,6 +189,7 @@ func PriceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	var mess string
 	if update.Triggertype == "spot" {
 		mess = fmt.Sprintf("Price alert: Coin: %s is %s threshold: %.2f\n Current spot price: %.2f\n Trigger Type: %s",
+
 							update.Symbol, direction, update.Threshold, update.Spotprice, update.Triggertype)
 	}
 	if update.Triggertype == "price-difference" {

@@ -24,7 +24,7 @@ func HandleMessage(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 	user := message.From
 	text := message.Text
 
-	log.Printf("%s wrote: %s", user.FirstName, text)
+	log.Printf("\n\n%s wrote: %s", user.FirstName+" "+user.LastName, text)
 
 	if strings.HasPrefix(text, "/") {
 		parts := strings.Fields(text)
@@ -46,7 +46,7 @@ func HandleMessage(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 
 // Handle commands (e.g., /scream, /whisper, /menu)
 func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.BotAPI, user *tgbotapi.User) {
-	fmt.Println(user.ID)
+	fmt.Println("userID: ", user.ID)
 	switch command {
 	case "/help":
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, strings.Join(commandList, "\n")))
@@ -161,10 +161,59 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 			bot.Send(msg)
 			return
 		}
-
 		symbol := args[0]
 		go GetFundingRateCountdown(chatID, symbol, bot)
+	//----------------------------------------------------------------------------------------
+	case "/alert_price_with_threshold":
+		if len(args) < 4 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /alert_price_with_threshold <spot/future> <lower/above> <symbol> <threshold>")
+			bot.Send(msg)
+			return
+		}
+
+		// Validate price_type (arg[0])
+		price_type := args[0]
+		if price_type != "spot" && price_type != "future" {
+			msg := tgbotapi.NewMessage(chatID, "First argument must be either 'spot' or 'future'")
+			bot.Send(msg)
+			return
+		}
+
+		// Validate comparison type (arg[1])
+		if args[1] != "lower" && args[1] != "above" {
+			msg := tgbotapi.NewMessage(chatID, "Second argument must be either 'lower' or 'above'")
+			bot.Send(msg)
+			return
+		}
+
+		is_lower := args[1] == "lower"
+		symbol := args[2]
+		threshold, err := strconv.ParseFloat(args[3], 64)
+		if err != nil {
+			log.Println("Error parsing threshold:", err)
+			return
+		}
+		go RegisterPriceThreshold(chatID, symbol, threshold, is_lower, price_type, bot)
+	case "/price_differece":
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /price_differece <threshold>")
+			bot.Send(msg)
+			return
+		}
+		msg := tgbotapi.NewMessage(chatID, "This command is not implemented yet.")
+		bot.Send(msg)
+		// go RegisterPriceDifference(chatID, symbol, threshold, is_lower, price_type, bot)
+	case "/funding_rate_change":
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /funding_rate_change <threshold>")
+			bot.Send(msg)
+			return
+		}
+		msg := tgbotapi.NewMessage(chatID, "This command is not implemented yet.")
+		bot.Send(msg)
+		// go RegisterFundingRateChange(chatID, symbol, threshold, is_lower, price_type, bot)
 	}
+
 }
 
 func sendMenu(chatID int64) tgbotapi.MessageConfig {
