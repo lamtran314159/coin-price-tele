@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -164,8 +166,19 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 		symbol := args[0]
 		go GetFundingRateCountdown(chatID, symbol, bot)
 	//----------------------------------------------------------------------------------------
+	case "/all_triggers":
+		go GetAllTrigger(chatID, bot)
+	case "/delete_trigger":
+		if len(args) != 2 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /delete_trigger <symbol> <spot/future/price-difference/funding-rate>")
+			bot.Send(msg)
+			return
+		}
+		symbol := args[1]
+		price_type := args[0]
+		go DeleteTrigger(chatID, bot, symbol, price_type)
 	case "/alert_price_with_threshold":
-		if len(args) < 4 {
+		if len(args) != 4 {
 			msg := tgbotapi.NewMessage(chatID, "Usage: /alert_price_with_threshold <spot/future> <lower/above> <symbol> <threshold>")
 			bot.Send(msg)
 			return
@@ -258,4 +271,97 @@ func getKlineData(symbol string, interval string, limit int) (string, error) {
 
 	// Return the raw JSON response as a string
 	return string(body), nil
+}
+
+type AllTriggerResponse struct {
+	ID                   string  `json:"id"`
+	AlertID              string  `json:"alert_id"`
+	Username             string  `json:"username"`
+	Symbol               string  `json:"symbol"`
+	Condition            string  `json:"condition"`
+	NotificationMethod   *string `json:"notification_method"`
+	SpotPriceThreshold   float64 `json:"spotPriceThreshold"`
+	FuturePriceThreshold float64 `json:"futurePriceThreshold"`
+}
+
+func GetAllTrigger(ID int64, bot *tgbotapi.BotAPI) {
+	url := "https://hcmutssps.id.vn/api/vip2/get/alerts"
+	method := "GET"
+
+	client := &http.Client{}
+	req, err := http.NewRequest(method, url, nil)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	req.Header.Add("Accept", "*/*")
+	req.Header.Add("Cookie", "token=eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJNSyIsInN1YiI6InRyYW5odXkiLCJwYXNzd29yZCI6ImFpIGNobyBjb2kgbeG6rXQga2jhuql1IiwiZXhwIjoxNzMwMTgyOTg2fQ.M0HlUeoRE5WuA59oIDWu9uQ32U1rIQIGd9AQiTlEbX4")
+
+	res, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(string(body))
+
+	var response []AllTriggerResponse
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		fmt.Println("Error unmarshalling response:", err)
+		return
+	}
+
+	// Format the response for sending
+	var responseText string
+	count := 1
+	for _, trigger := range response {
+		if trigger.SpotPriceThreshold != 0 {
+			responseText += fmt.Sprintf("%d.\n\tSymbol: %s\n\tCondition: %s\n\tspotPriceThreshold: %f\n",
+				count, trigger.Symbol, trigger.Condition, trigger.SpotPriceThreshold)
+		} else if trigger.FuturePriceThreshold != 0 {
+			responseText += fmt.Sprintf("%d.\n\tSymbol: %s\n\tCondition: %s\n\tfuturePriceThreshold: %f\n",
+				count, trigger.Symbol, trigger.Condition, trigger.FuturePriceThreshold)
+		}
+		count++
+	}
+
+	bot.Send(tgbotapi.NewMessage(ID, fmt.Sprintf("All triggers:\n%v", responseText)))
+}
+
+func DeleteTrigger(ID int64, bot *tgbotapi.BotAPI, symbol string, price_type string) {
+	url := fmt.Sprintf("https://hcmutssps.id.vn/api/vip2/delete/%s?triggerType=%s", symbol, price_type)
+	method := "DELETE"
+
+	client := &http.Client{}
+	req, err := http.NewRequest(method, url, nil)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	req.Header.Add("Accept", "*/*")
+	req.Header.Add("Cookie", "token=eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJNSyIsInN1YiI6InRyYW5odXkiLCJwYXNzd29yZCI6ImFpIGNobyBjb2kgbeG6rXQga2jhuql1IiwiZXhwIjoxNzMwMTgyOTg2fQ.M0HlUeoRE5WuA59oIDWu9uQ32U1rIQIGd9AQiTlEbX4")
+
+	res, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(string(body))
+	bot.Send(tgbotapi.NewMessage(ID, string(body)))
 }
