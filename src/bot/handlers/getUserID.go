@@ -24,7 +24,16 @@ type Payload struct {
 	Threshold []float64 `json:"threshold"`
 }
 
+
 var storedChatIDs = make(map[int64]bool)
+
+//!send to BE
+type CoinPriceUpdate struct {
+	Symbol   string    `json:"symbol"`
+	Price float64  `json:"threshold"`
+	Condition string `json:"condition"` // >= price, <=, >, < 
+	Triggertype string `json:"triggerType"`
+}
 
 // Function to store chatID in the backend
 func StoreChatID(ID int64) error {

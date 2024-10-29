@@ -78,6 +78,7 @@ var commands = []tgbotapi.BotCommand{
 	},
 }
 
+
 // send from BE
 type CoinPriceUpdate struct {
 	Symbol      string  `json:"symbol"`
@@ -90,6 +91,7 @@ type CoinPriceUpdate struct {
 	ChatID      string  `json:"chatID"`
 	Timestamp   string  `json:"timestamp"`
 	Triggertype string  `json:"triggerType"` //spot, price-difference, funding-rate, future
+
 }
 
 // Initialize the bot with the token
@@ -175,7 +177,8 @@ func PriceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Received price update: Coin: %s, Price: %.2f, Timestamp: %s\n", update.Symbol, update.Threshold, update.Timestamp)
 	// Sử dụng WaitGroup để quản lý các goroutine
 	direction := "below"
-	if update.Condition == ">=" || update.Condition == ">" {
+
+	if (update.Condition == ">=" || update.Condition == ">") {
 		direction = "above"
 	}
 	chatID, err := strconv.ParseInt(update.ChatID, 10, 64)
@@ -186,11 +189,12 @@ func PriceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	var mess string
 	if update.Triggertype == "spot" {
 		mess = fmt.Sprintf("Price alert: Coin: %s is %s threshold: %.2f\n Current spot price: %.2f\n Trigger Type: %s",
-			update.Symbol, direction, update.Threshold, update.Spotprice, update.Triggertype)
+
+							update.Symbol, direction, update.Threshold, update.Spotprice, update.Triggertype)
 	}
 	if update.Triggertype == "price-difference" {
 		mess = fmt.Sprintf("Price alert: Coin: %s is %s Price-diff: %.2f\n Current spot price: %.2f, Current future price: %.2f\n Trigger Type: %s",
-			update.Symbol, direction, update.Pricediff, update.Spotprice, update.Futureprice, update.Triggertype)
+							update.Symbol, direction, update.Pricediff, update.Spotprice, update.Futureprice, update.Triggertype)
 	}
 	go handlers.SendMessageToUser(bot, chatID, mess)
 
