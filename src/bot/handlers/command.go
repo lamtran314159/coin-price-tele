@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -28,7 +29,7 @@ func HandleMessage(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 	user := message.From
 	text := message.Text
 
-	log.Printf("%s wrote: %s", user.FirstName, text)
+	log.Printf("\n\n%s wrote: %s", user.FirstName+" "+user.LastName, text)
 
 	if strings.HasPrefix(text, "/") {
 		parts := strings.Fields(text)
@@ -50,7 +51,7 @@ func HandleMessage(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 
 // Handle commands (e.g., /scream, /whisper, /menu)
 func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.BotAPI, user *tgbotapi.User) {
-	fmt.Println(user.ID)
+	fmt.Println("userID: ", user.ID)
 	switch command {
 	case "/help":
 		_, err := bot.Send(tgbotapi.NewMessage(chatID, strings.Join(commandList, "\n")))
@@ -170,10 +171,70 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 			bot.Send(msg)
 			return
 		}
-
 		symbol := args[0]
 		go GetFundingRateCountdown(chatID, symbol, bot)
+	//----------------------------------------------------------------------------------------
+	case "/all_triggers":
+		go GetAllTrigger(chatID, bot)
+	case "/delete_trigger":
+		if len(args) != 2 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /delete_trigger <symbol> <spot/future/price-difference/funding-rate>")
+			bot.Send(msg)
+			return
+		}
+		symbol := args[1]
+		price_type := args[0]
+		go DeleteTrigger(chatID, bot, symbol, price_type)
+	case "/alert_price_with_threshold":
+		if len(args) != 4 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /alert_price_with_threshold <spot/future> <lower/above> <symbol> <threshold>")
+			bot.Send(msg)
+			return
+		}
+
+		// Validate price_type (arg[0])
+		price_type := args[0]
+		if price_type != "spot" && price_type != "future" {
+			msg := tgbotapi.NewMessage(chatID, "First argument must be either 'spot' or 'future'")
+			bot.Send(msg)
+			return
+		}
+
+		// Validate comparison type (arg[1])
+		if args[1] != "lower" && args[1] != "above" {
+			msg := tgbotapi.NewMessage(chatID, "Second argument must be either 'lower' or 'above'")
+			bot.Send(msg)
+			return
+		}
+
+		is_lower := args[1] == "lower"
+		symbol := args[2]
+		threshold, err := strconv.ParseFloat(args[3], 64)
+		if err != nil {
+			log.Println("Error parsing threshold:", err)
+			return
+		}
+		go RegisterPriceThreshold(chatID, symbol, threshold, is_lower, price_type, bot)
+	case "/price_differece":
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /price_differece <threshold>")
+			bot.Send(msg)
+			return
+		}
+		msg := tgbotapi.NewMessage(chatID, "This command is not implemented yet.")
+		bot.Send(msg)
+		// go RegisterPriceDifference(chatID, symbol, threshold, is_lower, price_type, bot)
+	case "/funding_rate_change":
+		if len(args) < 1 {
+			msg := tgbotapi.NewMessage(chatID, "Usage: /funding_rate_change <threshold>")
+			bot.Send(msg)
+			return
+		}
+		msg := tgbotapi.NewMessage(chatID, "This command is not implemented yet.")
+		bot.Send(msg)
+		// go RegisterFundingRateChange(chatID, symbol, threshold, is_lower, price_type, bot)
 	}
+
 }
 
 func sendMenu(chatID int64) tgbotapi.MessageConfig {
@@ -286,4 +347,97 @@ func sendChartToTelegram(bot *tgbotapi.BotAPI, chatID int64, chart *charts.Kline
 	}
 
 	return nil
+}
+
+type AllTriggerResponse struct {
+	ID                   string  `json:"id"`
+	AlertID              string  `json:"alert_id"`
+	Username             string  `json:"username"`
+	Symbol               string  `json:"symbol"`
+	Condition            string  `json:"condition"`
+	NotificationMethod   *string `json:"notification_method"`
+	SpotPriceThreshold   float64 `json:"spotPriceThreshold"`
+	FuturePriceThreshold float64 `json:"futurePriceThreshold"`
+}
+
+func GetAllTrigger(ID int64, bot *tgbotapi.BotAPI) {
+	url := "https://hcmutssps.id.vn/api/vip2/get/alerts"
+	method := "GET"
+
+	client := &http.Client{}
+	req, err := http.NewRequest(method, url, nil)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	req.Header.Add("Accept", "*/*")
+	req.Header.Add("Cookie", "token=eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJNSyIsInN1YiI6InRyYW5odXkiLCJwYXNzd29yZCI6ImFpIGNobyBjb2kgbeG6rXQga2jhuql1IiwiZXhwIjoxNzMwMTgyOTg2fQ.M0HlUeoRE5WuA59oIDWu9uQ32U1rIQIGd9AQiTlEbX4")
+
+	res, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(string(body))
+
+	var response []AllTriggerResponse
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		fmt.Println("Error unmarshalling response:", err)
+		return
+	}
+
+	// Format the response for sending
+	var responseText string
+	count := 1
+	for _, trigger := range response {
+		if trigger.SpotPriceThreshold != 0 {
+			responseText += fmt.Sprintf("%d.\n\tSymbol: %s\n\tCondition: %s\n\tspotPriceThreshold: %f\n",
+				count, trigger.Symbol, trigger.Condition, trigger.SpotPriceThreshold)
+		} else if trigger.FuturePriceThreshold != 0 {
+			responseText += fmt.Sprintf("%d.\n\tSymbol: %s\n\tCondition: %s\n\tfuturePriceThreshold: %f\n",
+				count, trigger.Symbol, trigger.Condition, trigger.FuturePriceThreshold)
+		}
+		count++
+	}
+
+	bot.Send(tgbotapi.NewMessage(ID, fmt.Sprintf("All triggers:\n%v", responseText)))
+}
+
+func DeleteTrigger(ID int64, bot *tgbotapi.BotAPI, symbol string, price_type string) {
+	url := fmt.Sprintf("https://hcmutssps.id.vn/api/vip2/delete/%s?triggerType=%s", symbol, price_type)
+	method := "DELETE"
+
+	client := &http.Client{}
+	req, err := http.NewRequest(method, url, nil)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	req.Header.Add("Accept", "*/*")
+	req.Header.Add("Cookie", "token=eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJNSyIsInN1YiI6InRyYW5odXkiLCJwYXNzd29yZCI6ImFpIGNobyBjb2kgbeG6rXQga2jhuql1IiwiZXhwIjoxNzMwMTgyOTg2fQ.M0HlUeoRE5WuA59oIDWu9uQ32U1rIQIGd9AQiTlEbX4")
+
+	res, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(string(body))
+	bot.Send(tgbotapi.NewMessage(ID, string(body)))
 }
