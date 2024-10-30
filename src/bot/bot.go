@@ -46,7 +46,7 @@ var commands = []tgbotapi.BotCommand{
 	},
 	{
 		Command:     "kline",
-		Description: "<symbol> <interval> [limit] [startTime] [endTime]",
+		Description: "Get Kline data on demand for a symbol",
 	},
 	{
 		Command:     "price_spot",
