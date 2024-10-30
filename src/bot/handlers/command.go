@@ -1,16 +1,20 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
-
 	"telegram-bot/services"
+	"time"
 
+	"github.com/go-echarts/go-echarts/v2/charts"
+	"github.com/go-echarts/snapshot-chromedp/render"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -109,8 +113,15 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 			// If there's an error, send the error message back to the user
 			_, _ = bot.Send(tgbotapi.NewMessage(chatID, "Error fetching Kline data: "+err.Error()))
 		} else {
-			// If there's no error, send the Kline data
-			_, _ = bot.Send(tgbotapi.NewMessage(chatID, data))
+			fmt.Println(data)
+			// Convert to JSON string
+			// kdJSON, err := json.MarshalIndent(data, "", "  ")
+			// if err != nil {
+			// 	fmt.Println("Error:", err)
+			// 	return
+			// }
+			sendChartToTelegram(bot, chatID, klineBase(data))
+
 		}
 	case "/menu":
 		_, err := bot.Send(sendMenu(chatID))
@@ -183,7 +194,7 @@ func copyMessage(message *tgbotapi.Message) tgbotapi.MessageConfig {
 	return msg
 }
 
-func getKlineData(symbol string, interval string, options ...int) (string, error) {
+func getKlineData(symbol string, interval string, options ...int) ([]klineData, error) {
 	// Define the API endpoint
 	apiURL := fmt.Sprintf("https://api.binance.com/api/v3/klines?symbol=%s&interval=%s", symbol, interval)
 
@@ -200,21 +211,79 @@ func getKlineData(symbol string, interval string, options ...int) (string, error
 	// Make the GET request
 	resp, err := http.Get(apiURL)
 	if err != nil {
-		return "", fmt.Errorf("failed to make request: %v", err)
+		fmt.Errorf("failed to make request: %v", err)
 	}
 	defer resp.Body.Close()
 
 	// Check if request was successful
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("request failed: %s", resp.Status)
+		fmt.Errorf("request failed: %s", resp.Status)
 	}
 
 	// Read the response body
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read response: %v", err)
+	var data [][]interface{}
+	body, _ := ioutil.ReadAll(resp.Body)
+	json.Unmarshal(body, &data)
+
+	var kd []klineData
+	for _, k := range data {
+		openTime := int64(k[0].(float64)) / 1000
+		date := time.Unix(openTime, 0).Format("2006-01-02 15:04:05")
+
+		open, _ := parseFloat32(k[1].(string))
+		high, _ := parseFloat32(k[2].(string))
+		low, _ := parseFloat32(k[3].(string))
+		close, _ := parseFloat32(k[4].(string))
+
+		kd = append(kd, klineData{
+			Date: date,
+			Data: [4]float32{open, close, low, high},
+		})
 	}
 
 	// Return the raw JSON response as a string
-	return string(body), nil
+	return kd, nil
+}
+
+func sendChartToTelegram(bot *tgbotapi.BotAPI, chatID int64, chart *charts.Kline) error {
+	initialMsg := tgbotapi.NewMessage(chatID, "Uploading file...\nNote: Do not send anything until you receive the result.")
+	sentMsg, err := bot.Send(initialMsg)
+	if err != nil {
+		return fmt.Errorf("failed to send initial message: %w", err)
+	}
+	// Create a unique filename for each request
+	fileName := fmt.Sprintf("chart-%d%d.png", chatID, time.Now().UnixNano())
+	// Generate the image file
+	err = render.MakeChartSnapshot(chart.RenderContent(), fileName)
+	if err != nil {
+		return fmt.Errorf("failed to generate chart snapshot: %w", err)
+	}
+
+	// Read the generated file into memory
+	imgBytes, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return fmt.Errorf("failed to read generated chart image: %w", err)
+	}
+
+	// Send the image to Telegram
+	msg := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{
+		Name:  fileName,
+		Bytes: imgBytes,
+	})
+
+	if _, err := bot.Send(msg); err != nil {
+		return fmt.Errorf("failed to send chart image: %w", err)
+	}
+
+	// Delete the file after sending
+	if err := os.Remove(fileName); err != nil {
+		log.Printf("warning: failed to delete image file %s: %v", fileName, err)
+	}
+	// Delete or edit the initial "Uploading file..." message
+	editMsg := tgbotapi.NewEditMessageText(chatID, sentMsg.MessageID, "File uploaded successfully!")
+	if _, err := bot.Send(editMsg); err != nil {
+		log.Printf("warning: failed to edit initial message: %v", err)
+	}
+
+	return nil
 }
