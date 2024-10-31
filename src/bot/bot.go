@@ -66,20 +66,20 @@ var commands = []tgbotapi.BotCommand{
 	},
 	//----------------------------------------------------------------------------------------
 	{
-		Command:     "all_triggers",
-		Description: "Get all triggers",
-	},
-	{
 		Command:     "alert_price_with_threshold",
 		Description: "<spot/future> <lower/above> <symbol> <threshold>",
 	},
 	{
-		Command:     "price_differece",
-		Description: "<threshold>",
+		Command:     "price_difference",
+		Description: "<lower/above> <symbol> <threshold>",
 	},
 	{
 		Command:     "funding_rate_change",
-		Description: "<threshold>",
+		Description: "<lower/above> <symbol> <threshold>",
+	},
+	{
+		Command:     "all_triggers",
+		Description: "Get all triggers",
 	},
 	{
 		Command:     "delete_trigger",
@@ -195,19 +195,20 @@ func PriceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	var mess string
 	if update.Triggertype == "spot" {
-		mess = fmt.Sprintf("Price alert: Coin: %s is %s threshold: %.2f\nCurrent spot price: %.2f\nTrigger Type: %s",
-			update.Symbol, direction, update.Threshold, update.Spotprice, update.Triggertype)
+		mess = fmt.Sprintf("🚨Price alert:\n👉Coin: %s is %s spot price threshold: %.2f\n👉Current spot price: %.2f",
+			update.Symbol, direction, update.Threshold, update.Spotprice)
 
 	} else if update.Triggertype == "future" {
-		mess = fmt.Sprintf("Price alert: Coin: %s is %s threshold: %.2f\nCurrent future price: %.2f\nTrigger Type: %s",
-			update.Symbol, direction, update.Threshold, update.Futureprice, update.Triggertype)
+		mess = fmt.Sprintf("🚨Price alert:\n👉Coin: %s is %s future price threshold: %.2f\n👉Current future price: %.2f",
+			update.Symbol, direction, update.Threshold, update.Futureprice)
 
 	} else if update.Triggertype == "funding-rate" {
-		mess = "This is not implemented yet"
+		mess = fmt.Sprintf("🚨Funding rate alert:\n👉Coin: %s is %s funding rate threshold: %.2f\n👉Current funding rate: %.2f",
+			update.Symbol, direction, update.Threshold, update.Fundingrate)
 
 	} else if update.Triggertype == "price-difference" {
-		mess = fmt.Sprintf("Price alert: Coin: %s is %s Price-diff: %.2f\nCurrent spot price: %.2f, Current future price: %.2f\nTrigger Type: %s",
-			update.Symbol, direction, update.Pricediff, update.Spotprice, update.Futureprice, update.Triggertype)
+		mess = fmt.Sprintf("🚨Price alert:\n👉Coin: %s is %s Price-diff threshold: %.2f\n👉Current spot price: %.2f, Current future price: %.2f",
+			update.Symbol, direction, update.Pricediff, update.Spotprice, update.Futureprice)
 	}
 	go handlers.SendMessageToUser(bot, chatID, mess)
 
@@ -219,12 +220,13 @@ func PriceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 // demo payload
 // {
 //     "symbol": "BTC",
-//     "spot_price": 65000,
+//     "spot_price": 59000,
 //     "future_price": 64000,
+//     "price_diff": 100,
+//     "fundingrate": 20,
 //     "threshold": 60000,
-//     "condition" : ">=",
+//     "condition" : "<",
 //     "chatID": "6540286252",
-//     "price_diff": 1000,
 //     "timestamp": "2024-01-01T00:00:00Z",
-//     "triggerType": "price-difference"
+//     "triggerType": "spot"
 // }
