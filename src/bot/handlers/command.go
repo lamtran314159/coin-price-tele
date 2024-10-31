@@ -148,15 +148,15 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 			return
 		}
 		symbol := args[0]
-		go GetSpotPrice(chatID, symbol, bot)
-	case "/price_future":
+		go GetSpotPriceStream(chatID, symbol, bot)
+	case "/price_futures":
 		if len(args) < 1 {
-			msg := tgbotapi.NewMessage(chatID, "Usage: /price_future <symbol>")
+			msg := tgbotapi.NewMessage(chatID, "Usage: /price_futures <symbol>")
 			bot.Send(msg)
 			return
 		}
 		symbol := args[0]
-		go GetFuturePrice(chatID, symbol, bot)
+		go GetFuturesPriceStream(chatID, symbol, bot)
 	case "/funding_rate":
 		if len(args) < 1 {
 			msg := tgbotapi.NewMessage(chatID, "Usage: /funding_rate <symbol>")
@@ -164,15 +164,15 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 			return
 		}
 		symbol := args[0]
-		go GetFundingRate(chatID, symbol, bot)
-	case "/funding_rate_countdown":
-		if len(args) < 1 {
-			msg := tgbotapi.NewMessage(chatID, "Usage: /funding_rate_countdown <symbol>")
-			bot.Send(msg)
-			return
-		}
-		symbol := args[0]
-		go GetFundingRateCountdown(chatID, symbol, bot)
+		go GetFundingRateStream(chatID, symbol, bot)
+	// case "/funding_rate_countdown":
+	// 	if len(args) < 1 {
+	// 		msg := tgbotapi.NewMessage(chatID, "Usage: /funding_rate_countdown <symbol>")
+	// 		bot.Send(msg)
+	// 		return
+	// 	}
+	// 	symbol := args[0]
+	// 	go GetFundingRateCountdown(chatID, symbol, bot)
 	//----------------------------------------------------------------------------------------
 	case "/all_triggers":
 		go GetAllTrigger(chatID, bot)

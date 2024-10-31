@@ -46,7 +46,7 @@ var commandList = []string{
 	"/help - Show available commands",
 	"/kline - Fetches Kline data for a specific trading pair and interval",
 	"/price_spot - Retrieve the latest spot price of a symbol",
-	"/price_future - Retrieve the latest futures price of a symbol",
+	"/price_futures - Retrieve the latest futures price of a symbol",
 	"/funding_rate - Fetch the current funding rate for a symbol",
 	"/funding_rate_countdown - Show the countdown to the next funding time for a symbol",
 }
