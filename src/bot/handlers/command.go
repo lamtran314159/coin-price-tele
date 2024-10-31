@@ -174,7 +174,7 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 		userConnections[chatID] = &UserConnection{isStreaming: true}
 		mapMutex.Unlock()
 
-		cookie := "token=eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJNSyIsInN1YiI6InRyYW5odXkiLCJwYXNzd29yZCI6ImFpIGNobyBjb2kgbeG6rXQga2jhuql1IiwiZXhwIjoxNzMwMzU0MDE1fQ.KlxYvFfF7YljwX3FCC0gT_AaJ0_CnPZbvNp1yLfDG-Q"
+		cookie := "token="
 
 		// Start fetching Kline data and sending real-time updates to the user
 		go fetchKlineData(symbol, interval, cookie, chatID, bot)
