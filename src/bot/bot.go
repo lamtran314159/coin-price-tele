@@ -61,7 +61,7 @@ var commands = []tgbotapi.BotCommand{
 		Description: "<symbol>",
 	},
 	{
-		Command:     "price_future",
+		Command:     "price_futures",
 		Description: "<symbol>",
 	},
 	{

@@ -44,11 +44,12 @@ var commandList = []string{
 	"/whisper - Disable screaming mode",
 	"/menu - Show menu with buttons",
 	"/help - Show available commands",
+	"/kline - Fetches Kline data for a specific trading pair and interval",
+	"/price_spot - Retrieve the latest spot price of a symbol",
+	"/price_futures - Retrieve the latest futures price of a symbol",
+	"/funding_rate - Displays all information about funding rate",
 	"/kline <symbol> <interval> [limit] [startTime] [endTime] - Get Kline data for a symbol",
-	"/kline_realtime <symbol> <interval> Get realtime Kline data ",
+	"/kline_realtime <symbol> <interval> Get realtime Kline data",
 	"/stop - stop receiving data from kline-realtime",
-	"/p_spot - Get spot price of a symbol",
-	"/p_future - Get future price of a symbol",
-	"/fundRate - Get funding rate of a symbol",
-	"/fundRateCDown - Get funding time of a symbol",
+
 }
