@@ -173,6 +173,34 @@ func handleCommand(chatID int64, command string, args []string, bot *tgbotapi.Bo
 	// 	}
 	// 	symbol := args[0]
 	// 	go GetFundingRateCountdown(chatID, symbol, bot)
+	case "/kline_realtime":
+		if len(args) != 2 {
+			bot.Send(tgbotapi.NewMessage(chatID, "Usage: /kline <symbol> <interval>. Example: /kline BTCUSDT 1m"))
+			return
+		}
+
+		symbol := args[0]
+		interval := args[1]
+
+		mapMutex.Lock()
+		userConnections[chatID] = &UserConnection{isStreaming: true}
+		mapMutex.Unlock()
+
+		cookie := "token="
+
+		// Start fetching Kline data and sending real-time updates to the user
+		go fetchKlineData(symbol, interval, cookie, chatID, bot)
+		bot.Send(tgbotapi.NewMessage(chatID, "Fetching real-time Kline data..."))
+	case "/stop":
+		mapMutex.Lock()
+		if userConn, ok := userConnections[chatID]; ok {
+			userConn.isStreaming = false
+			bot.Send(tgbotapi.NewMessage(chatID, "Stopped real-time Kline updates."))
+		} else {
+			bot.Send(tgbotapi.NewMessage(chatID, "No active real-time updates to stop."))
+		}
+		mapMutex.Unlock()
+
 	//----------------------------------------------------------------------------------------
 	case "/all_triggers":
 		go GetAllTrigger(chatID, bot)

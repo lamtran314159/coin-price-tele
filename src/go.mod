@@ -24,6 +24,7 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/go-echarts/go-echarts/v2 v2.4.3
 	github.com/go-echarts/snapshot-chromedp v0.0.4
 	github.com/pmezard/go-difflib v1.0.0 // indirect

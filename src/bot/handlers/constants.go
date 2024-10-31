@@ -47,6 +47,9 @@ var commandList = []string{
 	"/kline - Fetches Kline data for a specific trading pair and interval",
 	"/price_spot - Retrieve the latest spot price of a symbol",
 	"/price_futures - Retrieve the latest futures price of a symbol",
-	"/funding_rate - Fetch the current funding rate for a symbol",
-	"/funding_rate_countdown - Show the countdown to the next funding time for a symbol",
+	"/funding_rate - Displays all information about funding rate",
+	"/kline <symbol> <interval> [limit] [startTime] [endTime] - Get Kline data for a symbol",
+	"/kline_realtime <symbol> <interval> Get realtime Kline data",
+	"/stop - stop receiving data from kline-realtime",
+
 }
