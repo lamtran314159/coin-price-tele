@@ -1,0 +1,10 @@
+version = 1
+
+[[analyzers]]
+name = "go"
+
+  [analyzers.meta]
+  import_root = "github.com/lamtran314159/coin-price-tele"
+
+[[analyzers]]
+name = "javascript"
